@@ -29,11 +29,11 @@ def main():
     effort = gripper.MAX_EFFORT
     if command == 'close' and len(argv) > 2:
         effort = float(argv[2])
-
+    
     if command == 'open':
-        rospy.logerr('Not implemented.')
+        gripper.open()
     elif command == 'close':
-        rospy.logerr('Not implemented.')
+        gripper.close(effort)
     else:
         print_usage()
 
