@@ -19,7 +19,6 @@ class JointStateReader(object):
         rospy.Subscriber("joint_states", JointState, self.callback)
 
     def callback(self, x):
-        #rospy.loginfo(x.name) 
         self.arm_names = x.name
         self.arm_values = x.position
                                                                                                        
@@ -32,11 +31,9 @@ class JointStateReader(object):
         Returns: the joint value, or None if we do not have a value yet.                               
         """                                                                                            
         #rospy.logerr('Not implemented.') 
-        try :
-            index = self.arm_names.index(name)
-            return self.arm_values[index]     
-        except:
-            return None                                                                     
+        if name in self.arm_names:
+            return self.arm_values[self.arm_names.index(name)]
+        return None                                                                   
                                                                                                        
     def get_joints(self, names):                                                                       
         """Gets the latest values for a list of joint names.                    
