@@ -23,9 +23,9 @@ def main():
     for k, v in zip(names, arm_vals):
         print '{}\t{}'.format(k, v)
 
-    value = reader.get_joint('shoulder_pan_joint')
+    value = reader.get_joint('r_gripper_finger_joint')
     print value
-    value = reader.get_joint("YOYOYOY")
+    value = reader.get_joint('l_gripper_finger_joint')
     print value
                       
                       

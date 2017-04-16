@@ -48,6 +48,9 @@ class JointStateReader(object):
         #rospy.logerr('Not implemented.')        
         result = []   
         for x in names:
-            result.append(self.arm_values[self.arm_names.index(x)])                             
+            if x in self.arm_names:
+                result.append(self.arm_values[self.arm_names.index(x)])
+            else:
+                result.append(None)                             
         return result
 

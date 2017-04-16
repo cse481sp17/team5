@@ -23,7 +23,7 @@ def main():
     head_tilt_pub = rospy.Publisher('joint_state_republisher/head_tilt_joint',
                                 Float64)
     reader = JointStateReader()
-    rospy.sleep(0.5)
+    rospy.sleep(1)
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
