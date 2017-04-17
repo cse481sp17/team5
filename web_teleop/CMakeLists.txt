@@ -61,6 +61,7 @@ add_service_files(
   SetTorso.srv
   SetHeadPanTilt.srv
   SetGripper.srv
+  SetArm.srv
 )
 
 ## Generate actions in the 'action' folder

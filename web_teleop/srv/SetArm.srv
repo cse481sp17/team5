@@ -1,0 +1,8 @@
+float64 armShoulderPan
+float64 armShoulderLift
+float64 armUpperarmRoll
+float64 armElbowFlex
+float64 armForearmRoll
+float64 armWristFlex
+float64 armWristRoll
+---

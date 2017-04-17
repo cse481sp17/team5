@@ -75,7 +75,7 @@ Head = function(ros) {
 
   // Method to set the height.
   this.setPanTilt = function(pan, tilt) {
-    var pan = Math.min(Math.max(-1.5708, pan), 1.5708);
+    var pan = -Math.min(Math.max(-1.5708, pan), 1.5708);
     var tilt = Math.min(Math.max(-0.785398, tilt), 1.5708);
     var request = new ROSLIB.ServiceRequest({
       pan: pan,

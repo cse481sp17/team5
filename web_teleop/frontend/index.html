@@ -7,6 +7,7 @@
     <script src="roslib.js"></script>
     <script src="gripper.js"></script>
     <script src="head.js"></script>
+    <script src="arm.js"></script>
     <script src="base.js"></script>
     <script src="torso.js"></script>
     <script src="app.js"></script>
@@ -18,6 +19,9 @@
       <label for="websocketUrl">Websocket URL:</label>
       <input id="websocketUrl" type="text"></input>
       <input id="websocketButton" type="button" value="Reconnect"></input>
+    </div>
+    <div id="camera">
+      <img src="//localhost:8000/stream?topic=/head_camera/rgb/image_raw"></img>
     </div>
     <div id="base">
       <h2>Base control</h2>
@@ -57,6 +61,39 @@
       <!--Current gripper status: <span id="gripperState"></span><br /><br />-->
       <input id="grip_openButton" type="button" value="Open"></input>
       <input id="grip_CloseButton" type="button" value="Close"></input>
+      
+    </div>
+    <div id="arm">
+      <h2>Arm control</h2>
+      Current shoulder pan: <span id="armShoulderPan"></span><br />
+      <label for="armShoulderPanSlider">Set shoulder pan:</label>
+      <input id="armShoulderPanSlider" type="range" min="-1.6" max="1.6" step="0.01"></input>
+      <span id="desiredArmShoulderPan"></span><br /><br />
+      Current shoulder lift: <span id="armShoulderLift"></span><br />
+      <label for="armShoulderLiftSlider">Set shoulder lift:</label>
+      <input id="armShoulderLiftSlider" type="range" min="-1.5" max="1.2" step="0.01"></input>
+      <span id="desiredArmShoulderLift"></span><br /><br />
+      Current upperarm roll: <span id="armUpperarmRoll"></span><br />
+      <label for="armUpperarmRollSlider">Set upperarm roll:</label>
+      <input id="armUpperarmRollSlider" type="range" min="-3.0" max="3.0" step="0.01"></input>
+      <span id="desiredArmUpperarmRoll"></span><br /><br />
+      Current elbow flex: <span id="armElbowFlex"></span><br />
+      <label for="armElbowFlexSlider">Set elbow flex:</label>
+      <input id="armElbowFlexSlider" type="range" min="-2.25" max="2.25" step="0.01"></input>
+      <span id="desiredArmElbowFlex"></span><br /><br />
+      Current forearm roll: <span id="armForearmRoll"></span><br />
+      <label for="armForearmRollSlider">Set forearm roll:</label>
+      <input id="armForearmRollSlider" type="range" min="-3.0" max="3.0" step="0.01"></input>
+      <span id="desiredArmForearmRoll"></span><br /><br />
+      Current wrist flex: <span id="armWristFlex"></span><br />
+      <label for="armWristFlexSlider">Set wrist flex:</label>
+      <input id="armWristFlexSlider" type="range" min="-2.15" max="2.15" step="0.01"></input>
+      <span id="desiredArmWristFlex"></span><br /><br />
+      Current wrist roll: <span id="armWristRoll"></span><br />
+      <label for="armWristRollSlider">Set wrist roll:</label>
+      <input id="armWristRollSlider" type="range" min="-3.0" max="3.0" step="0.01"></input>
+      <span id="desiredArmWristRoll"></span><br /><br />
+      <input id="armButton" type="button" value="Set"></input>
       
     </div>
   </body>
