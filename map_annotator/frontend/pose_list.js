@@ -45,7 +45,6 @@ PoseList = function(ros) {
     var message = new ROSLIB.Message();
     message.command = "create";
     message.name = name;
-    window.alert("Creating Pose: " + name);
     actionSub.publish(message);
   })
 }
