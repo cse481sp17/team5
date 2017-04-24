@@ -8,14 +8,15 @@ PoseList = function(ros) {
   var sub = new ROSLIB.Topic({
     ros: ros,
     name: '/pose_names',
-    messageType: 'map_annotator/PoseNames'
+    messageType: 'map_annotator/PoseNames',
+    throttle_rate: 10,
   });
 
   // Create topic for publishing user actions to the server.
-  var actionSub = new ROSLIB.Topic({
+  var actionPublisher = new ROSLIB.Topic({
       ros: ros,
       name: '/user_actions',
-      messageType: 'map_annotator/UserActions'
+      messageType: 'map_annotator/UserAction'
   });
 
   var render = function(poseList) {
@@ -24,7 +25,7 @@ PoseList = function(ros) {
     } else {
       poseListDiv.innerHTML = '';
       for (var i=0; i<poseList.length; ++i) {
-        var pose = new Pose(ros, poseList[i], actionSub);
+        var pose = new Pose(ros, poseList[i]);
         var poseDiv = pose.render();
         poseListDiv.appendChild(poseDiv);
       }
@@ -45,6 +46,6 @@ PoseList = function(ros) {
     var message = new ROSLIB.Message();
     message.command = "create";
     message.name = name;
-    actionSub.publish(message);
+    actionPublisher.publish(message);
   })
 }

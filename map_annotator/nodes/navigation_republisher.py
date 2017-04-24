@@ -2,11 +2,10 @@
 
 import rospy
 from std_msgs.msg import Float64
-from std_msgs.msg import String
 from map_annotator.msg import PoseNames
 import pickle
 
-PICKLE_FILE='pose_list.p'
+PICKLE_FILE='pose_list_n.p'
 map_list_data = {}
 current_amcl = None
 
@@ -23,7 +22,7 @@ def main():
     rospy.init_node('navigation_republisher')
     wait_for_time()
 
-    pose_names_pub = rospy.Publisher('/pose_names', PoseNames, latch=True)
+    pose_names_pub = rospy.Publisher('/pose_names', PoseNames, queue_size=10, latch=True)
     rospy.sleep(1)
 
     rate = rospy.Rate(10)
@@ -35,7 +34,7 @@ def main():
             map_list_data = {}
             pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
         message = PoseNames()
-        message.names = list(map_list_data)
+        message.names = map_list_data
         pose_names_pub.publish(message)
 
         rate.sleep()

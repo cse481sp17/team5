@@ -1,14 +1,19 @@
-Pose = function(ros, name, sub) {
+Pose = function(ros, name) {
   var that = this;
   this.name = name;
 
-  function handleGoTo() {
-    console.log('Go to ' + name + ' clicked.');
-    var message = new ROSLIB.Message();
+  var actionPublisher = new ROSLIB.Topic({
+      ros: ros,
+      name: '/user_actions',
+      messageType: 'map_annotator/UserAction'
+  });
 
+  function handleGoTo() {
+    console.log('GoTo ' + name + ' clicked.');
+    var message = new ROSLIB.Message();
     message.command = "goto";
     message.name = name;
-    sub.publish(message);
+    actionPublisher.publish(message);
   }
 
   function handleDelete() {
@@ -16,13 +21,13 @@ Pose = function(ros, name, sub) {
     var message = new ROSLIB.Message();
     message.command = "delete";
     message.name = name;
-    sub.publish(message);
+    actionPublisher.publish(message);
   }
 
   this.render = function() {
     var node = document.createElement('div');
     var nameNode = document.createTextNode(name);
-    node.appendChild(nameNode)
+    node.appendChild(nameNode);
 
     var sendNode = document.createElement('input');
     sendNode.type = 'button';

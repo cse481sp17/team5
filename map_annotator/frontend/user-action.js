@@ -49,7 +49,7 @@
         this._sub = new namespace.Topic({
             ros: ros,
             name: '/user_actions',
-            messageType: 'map_annotator/UserActions'
+            messageType: 'map_annotator/UserAction'
         });
 
         // Initialize the client view and bind listeners.
@@ -174,5 +174,5 @@
 
 }.apply(window.ROSLIB, // Namespace
     [window.document] // Dependencies
-    ));
+));
 

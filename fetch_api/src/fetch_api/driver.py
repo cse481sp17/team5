@@ -28,18 +28,18 @@ class Driver(object):
                 desired_distance = utils.calc_minkowski_distance(start.pose.pose.position, goal.position, 2)
 
                 n_t_t = utils.angular_diff(self._base._current_odom.pose.pose.position, goal.position)
-                print 'Need_to_turn: {}'.format(n_t_t)
+                # print 'Need_to_turn: {}'.format(n_t_t)
                 """
                 if utils.calculate_necessary_yaw(self._base._current_odom.pose.pose.orientation, goal.orientation) < 0:
                     n_t_t *= -1
                 """
 
-                print 'Need_to_turn: {}'.format(n_t_t)
-                '''print 'REQ_DIST: {}'.format(desired_distance)
-                print 'goal.oriant'
-                print goal.orientation.w
-                print 'current oriant'
-                print self._base._current_odom.pose.pose.orientation.w
+                # print 'Need_to_turn: {}'.format(n_t_t)
+                '''# print 'REQ_DIST: {}'.format(desired_distance)
+                # print 'goal.oriant'
+                # print goal.orientation.w
+                # print 'current oriant'
+                # print self._base._current_odom.pose.pose.orientation.w
                 '''
                 
             if state == 'turn':
@@ -53,8 +53,8 @@ class Driver(object):
                 current_yaw = utils.quaternion_to_yaw(self._base._current_odom.pose.pose.orientation)
 
                 target_orientation = utils.calc_angl(current_pos, goal.position)
-                print "Target Orientation: {}".format(target_orientation / 3.1415)
-                print "Orientation Diff: {}".format(target_orientation - current_yaw)
+                # print "Target Orientation: {}".format(target_orientation / 3.1415)
+                # print "Orientation Diff: {}".format(target_orientation - current_yaw)
 
                 """
                 need_orientaion = Quaternion()
@@ -72,7 +72,7 @@ class Driver(object):
                 if required_angular_distance < - math.pi:
                     required_angular_distance += 2 * math.pi
 
-                print 'REQ_ANG_DIST: {}'.format(required_angular_distance)
+                # print 'REQ_ANG_DIST: {}'.format(required_angular_distance)
 
                 rotate_speed = 1.0
                 if required_angular_distance > 0:
@@ -87,7 +87,7 @@ class Driver(object):
                     rotate_speed *= 0.3
                     self._base.move(0, rotate_speed)
                 else:
-                    print 'Done Turning'
+                    # print 'Done Turning'
                     speed = 0.4       
                     self._base.stop
                     time.sleep(0.5)    
@@ -100,11 +100,11 @@ class Driver(object):
                 curr_distance = utils.calc_minkowski_distance(start.pose.pose.position, self._base._current_odom.pose.pose.position, 2)
                 delta = curr_distance - desired_distance
                 if curr_distance < desired_distance:
-                    print 'delta: {}'.format(delta)
+                    # print 'delta: {}'.format(delta)
                     if abs(delta) < 0.5:
                         speed = 0.2
                     self._base.move(speed, 0)
-                    print 'check_turn: {}'.format(check_angle)
+                    # print 'check_turn: {}'.format(check_angle)
                     if check_angle % 80 == 0:
                         state = 'turn'
                 else:
@@ -131,7 +131,7 @@ class Driver(object):
                     rotate_speed *= 0.3
                     self._base.move(0, rotate_speed)
                 else:
-                    print 'Done Turning'
+                    # print 'Done Turning'
                     speed = 0.5       
                     self._base.stop
                     time.sleep(0.5)    

@@ -20,7 +20,7 @@ class DestinationMarker(object):
         int_marker.scale = 1.1
 
 
-        print name
+        # print name
         arrow_marker = Marker()
         arrow_marker.type = Marker.ARROW
         arrow_marker.pose.orientation.w = 1
@@ -58,5 +58,5 @@ class DestinationMarker(object):
          #if (msg.event_type == InteractiveMarkerFeedback.BUTTON_CLICK):
         interactive_marker = self._server.get(msg.marker_name)
         position = interactive_marker.pose.position
-        rospy.loginfo('User clicked {} at {}, {}, {}'.format(msg.marker_name, position.x, position.y, position.z))
+        # rospy.loginfo('User clicked {} at {}, {}, {}'.format(msg.marker_name, position.x, position.y, position.z))
         self._driver.goal = interactive_marker.pose
