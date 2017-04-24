@@ -6,7 +6,7 @@ App = function() {
 
   // Compute websocket URL.
   var url = (function() {
-    var hostname = window.location.hostname;
+    var hostname = 'robonaut.cs.washington.edu';
     var protocol = 'ws:';
     if (window.location.protocol == 'https:') {
       protocol = 'wss:'
@@ -26,7 +26,7 @@ App = function() {
     this.ros = new ROSLIB.Ros({url: url});
     this.ros.on('connection', function() {
       websocketStatus.textContent = 'Connected to websocket server.';
-      that.poseList = new PoseList(that.ros);
+      that.userActionController = new ROSLIB.UserActionController(that.ros, $('#userAction'));
     });
     this.ros.on('error', function(error) {
       websocketStatus.textContent = 'Error connecting to websocket server.';

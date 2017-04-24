@@ -4,11 +4,8 @@
 		<title>Map annotator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" type="text/css" href="annotator.css" />
-    <script src="eventemitter2.js"></script>
-    <script src="roslib.js"></script>
-    <script src="pose.js"></script>
-    <script src="pose_list.js"></script>
-    <script src="app.js"></script>
+    <link rel="stylesheet" type="text/css" hre="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.3.1/css/foundation.min.css"/>
+    
 	</head>
 	<body onload="init()">
     <h1>Map annotator</h1>
@@ -18,10 +15,14 @@
       <input id="websocketUrl" type="text"></input>
       <input id="websocketButton" type="button" value="Reconnect"></input>
     </div>
-    <h2>Poses</h2>
-    <div>
-      <input id="createButton" type="button" value="Create new pose" />
-    </div>
-    <div id="poseList"></div>
+    
+    <div id="userAction"></div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="eventemitter2.js"></script>
+    <script src="roslib.js"></script>
+    <script src="user-action.js"></script>
+    <script src="app.js"></script>
+
 	</body>
 </html>
