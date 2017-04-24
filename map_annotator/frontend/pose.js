@@ -4,7 +4,7 @@ Pose = function(ros, name, sub) {
 
   function handleGoTo() {
     console.log('Go to ' + name + ' clicked.');
-    var message = new ROSLIB.message();
+    var message = new ROSLIB.Message();
 
     message.command = "goto";
     message.name = name;
@@ -13,6 +13,7 @@ Pose = function(ros, name, sub) {
 
   function handleDelete() {
     console.log('Delete ' + name + ' clicked.');
+    var message = new ROSLIB.Message();
     message.command = "delete";
     message.name = name;
     sub.publish(message);

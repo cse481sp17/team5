@@ -7,17 +7,18 @@ from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, 
 from visualization_msgs.msg import Marker
 
 class PoseMarker(object):
-    def __init__(self, server, x, y, name):
+    def __init__(self, server, name):
         # ... Initialization, marker creation, etc. ...
         self._driver = driver        
         int_marker = InteractiveMarker()
         int_marker.header.frame_id = "odom"
         int_marker.name = name
         int_marker.description = name
-        int_marker.pose.position.x = x
-        int_marker.pose.position.y = y
+        int_marker.pose.position.x = 0
+        int_marker.pose.position.y = 0
+        int_marker.pose.position.z = 0
         int_marker.pose.orientation.w = 1
-        int_marker.scale = 1.1
+        int_marker.scale = 1
 
 
         print name
