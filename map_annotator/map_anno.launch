@@ -1,5 +1,4 @@
 <launch>
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-  <node pkg="map_annotator" type="navigation_republisher.py" name="navigation_republisher" />
   <node pkg="map_annotator" type="backend_run.py" name="web_teleop_navigation" />
 </launch>

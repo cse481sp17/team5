@@ -13,6 +13,7 @@ import geometry_msgs.msg
 pose_marker_server = None
 nav_server = None
 target_pose_pub = None
+pose_names_pub = None
 
 class PoseMarker(object):
     def __init__(self, server, name, pose_set):
@@ -82,6 +83,9 @@ def handle_user_actions(message):
         if message.command == 'create':
             new_pose_marker = PoseMarker(pose_marker_server, name, None)
             nav_server.saveMarker(name, new_pose_marker.pose)
+            message = PoseNames()
+            message.names = nav_server.pose_names_list
+            pose_names_pub.publish(message)
 
         elif message.command == 'goto':
 
@@ -94,6 +98,9 @@ def handle_user_actions(message):
         elif message.command == 'delete':
             if name in nav_server.pose_names_list:
                 nav_server.deleteMarker(name)
+                message = PoseNames()
+                message.names = nav_server.pose_names_list
+                pose_names_pub.publish(message)
                 pose_marker_server.erase(name)
                 pose_marker_server.applyChanges()        
         else:
@@ -103,10 +110,12 @@ def main():
     global pose_marker_server
     global nav_server
     global target_pose_pub
+    global pose_names_pub
     rospy.init_node('web_teleop_navigation')
     wait_for_time()
 
     pose_marker_server = InteractiveMarkerServer('simple_marker')
+    pose_names_pub = rospy.Publisher('/pose_names', PoseNames, queue_size=10, latch=True)
 
     nav_server = NavigationServer()
     # Create
@@ -114,7 +123,9 @@ def main():
     for name in nav_server.pose_names_list:
         marker = PoseMarker(pose_marker_server, name, nav_server.pose_names_list[name])
     
-
+    message = PoseNames()
+    message.names = nav_server.pose_names_list
+    pose_names_pub.publish(message)
     user_actions_sub = rospy.Subscriber('/user_actions', UserAction, handle_user_actions)    
 
 
