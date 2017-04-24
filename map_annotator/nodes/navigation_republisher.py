@@ -23,7 +23,7 @@ def main():
     rospy.init_node('navigation_republisher')
     wait_for_time()
 
-    pose_names_pub = rospy.Publisher('/pose_names', PoseNames)
+    pose_names_pub = rospy.Publisher('/pose_names', PoseNames, latch=True)
     rospy.sleep(1)
 
     rate = rospy.Rate(10)
@@ -35,7 +35,7 @@ def main():
             map_list_data = {}
             pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
         message = PoseNames()
-        message.names = list(map_list_data.keys())
+        message.names = list(map_list_data)
         pose_names_pub.publish(message)
 
         rate.sleep()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import fetch_api
+from fetch_api import PoseMarker
 import rospy
 from map_annotator.srv import ##
 import pickle
@@ -8,9 +8,11 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker
 import geometry_msgs.msg
+from map_annotator.msg import PoseNames
+from map_annotator.msg import UserAction
 
 PICKLE_FILE='pose_list.p'
-map_list_data = {}
+map_list_data = []
 #current_amcl = None
 
 def wait_for_time():
@@ -26,20 +28,20 @@ class NavigationServer(object):
         rospy.init_node('simple_marker')
         pose_marker_server = InteractiveMarkerServer('simple_marker')
 
-    def handle_set_name(self, request):
+    def handle_user_actions(self, message):
 
-        name = request.name
-        if request.operation == 'create':
+        name = message.name
+        if message.command == 'create':
             #driver = Driver(Base())
             new_pose_marker = PoseMarker(server, 2, 2, name)
+            map_list_data.append(name)
 
-            map_list_data[name] = pose_marker_server.get(name)
-            pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
+            pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ))
 
-        elif request.operation == 'goto':
+        elif message.command == 'goto':
 
             if name in map_list_data:
-                target_pose_marker = map_list_data[name]
+                target_pose_marker = pose_marker_server.get(name)
                 message = geometry_msgs.msg.PoseStamped()
                 message.header = target_pose_marker.header
                 message.pose = target_pose_marker.pose
@@ -48,16 +50,13 @@ class NavigationServer(object):
             else:
                 print 'No such pose \'{}\''.format(name):
 
-        elif if request.operation == 'delete':
+        elif if message.command == 'delete':
             if name in map_list_data:
-                map_list_data.pop(name)
-                pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )        
-            else:
-                print 'No such pose \'{}\''.format(name):
+                map_list_data.remove(name)
+                pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ))
+                pose_marker_server.erase(name)        
         else:
             pass
-        return SetNameResponse()
-
 
 
 def main():
@@ -78,7 +77,8 @@ def main():
 
     server = NavigationServer()
     # Create
-    set_name_service = rospy.Service('web_teleop/set_name', SetName, server.handle_set_name)
+    user_actions_sub = rospy.Subscriber('/user_actions', UserAction, server.handle_user_actions)
+    #set_name_service = rospy.Service('web_teleop/set_name', SetName, server.handle_set_name)
     
     rospy.spin()
 
