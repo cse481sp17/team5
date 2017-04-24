@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-
+import copy
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker
@@ -17,23 +17,37 @@ class DestinationMarker(object):
         int_marker.pose.position.x = x
         int_marker.pose.position.y = y
         int_marker.pose.orientation.w = 1
-        print name
-        box_marker = Marker()
-        box_marker.type = Marker.CUBE
-        box_marker.pose.orientation.w = 1
-        box_marker.scale.x = 0.45
-        box_marker.scale.y = 0.45
-        box_marker.scale.z = 0.45
-        box_marker.color.r = 0.0
-        box_marker.color.g = 0.5
-        box_marker.color.b = 0.5
-        box_marker.color.a = 1.0
+        int_marker.scale = 1.1
 
-        button_control = InteractiveMarkerControl()
-        button_control.interaction_mode = InteractiveMarkerControl.BUTTON
-        button_control.always_visible = True
-        button_control.markers.append(box_marker)
-        int_marker.controls.append(button_control)
+
+        print name
+        arrow_marker = Marker()
+        arrow_marker.type = Marker.ARROW
+        arrow_marker.pose.orientation.w = 1
+        arrow_marker.scale.x = 0.7
+        arrow_marker.scale.y = 0.07
+        arrow_marker.scale.z = 0.07
+        arrow_marker.color.r = 0.0
+        arrow_marker.color.g = 0.5
+        arrow_marker.color.b = 0.5
+        arrow_marker.color.a = 1.0
+
+        control = InteractiveMarkerControl()
+        control.orientation.w = 1
+        control.orientation.x = 0
+        control.orientation.y = 1
+        control.orientation.z = 0
+        control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
+        int_marker.controls.append(copy.deepcopy(control))
+
+        control.interaction_mode = InteractiveMarkerControl.MOVE_PLANE
+        control.always_visible = True
+        control.markers.append(arrow_marker)
+        int_marker.controls.append(control)
+
+        #int_marker_control.markers.append(arrow_marker)
+
+
         self._server = server
         self._server.insert(int_marker, self._callback)
         self._server.applyChanges()

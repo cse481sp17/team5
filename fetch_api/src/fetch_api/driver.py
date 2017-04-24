@@ -5,7 +5,7 @@ import utils
 import copy
 import math
 import time
-
+from geometry_msgs.msg import Quaternion
 
 class Driver(object):
     def __init__(self, base):
@@ -57,8 +57,13 @@ class Driver(object):
                 print "Orientation Diff: {}".format(target_orientation - current_yaw)
 
                 """
+                need_orientaion = Quaternion()
+                need_orientaion.x = 0
+                need_orientaion.y = 0
+                need_orientaion.z = 0
+                need_orientaion.w = 0
 
-                required_angular_distance = utils.calculate_necessary_yaw(self._base._current_odom.pose.pose.orientation, goal.orientation)
+                required_angular_distance = utils.calculate_necessary_yaw(self._base._current_odom.pose.pose.orientation, need_orientaion)
                 
                 #n_t_t = math.pi / 2 - utils.angular_diff(self._base._current_odom.pose.pose.position, goal.position)
 
@@ -83,7 +88,7 @@ class Driver(object):
                     self._base.move(0, rotate_speed)
                 else:
                     print 'Done Turning'
-                    speed = 0.5       
+                    speed = 0.4       
                     self._base.stop
                     time.sleep(0.5)    
                     state = 'move'
@@ -105,5 +110,31 @@ class Driver(object):
                 else:
                     self._base.stop()
                     time.sleep(0.5)
+                    state = 'final'
+
+            if state == 'final':
+                required_angular_distance = utils.calculate_necessary_yaw(self._base._current_odom.pose.pose.orientation, goal.orientation)
+
+                if required_angular_distance < - math.pi:
+                    required_angular_distance += 2 * math.pi
+
+                rotate_speed = 1.0
+                if required_angular_distance > 0:
+                    rotate_speed *= -1
+
+                if abs(required_angular_distance) > 0.6:
+                    self._base.move(0, rotate_speed)
+                elif abs(required_angular_distance) > 0.35:
+                    rotate_speed *= 0.6
+                    self._base.move(0, rotate_speed)
+                elif abs(required_angular_distance) > 0.04:
+                    rotate_speed *= 0.3
+                    self._base.move(0, rotate_speed)
+                else:
+                    print 'Done Turning'
+                    speed = 0.5       
+                    self._base.stop
+                    time.sleep(0.5)    
                     state = None
+
             rospy.sleep(0.1)
