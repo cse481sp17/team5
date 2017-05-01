@@ -8,6 +8,8 @@ from fetch_api import Arm, Gripper
 import gripper_grasp_utils
 import copy
 
+GRIPPER_OFFSET = 0.171
+
 class GripperTeleop(object):
     def __init__(self, arm, gripper, im_server):
         self._arm = arm
@@ -76,16 +78,19 @@ class AutoPickTeleop(object):
                 lift_gripper = interactive_marker.controls[0].markers[6]
                 self._gripper.open()
                 self.armPose.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
+                self.armPose.pose.position.x -= GRIPPER_OFFSET
                 self._arm.move_to_pose(self.armPose)
                 rospy.sleep(0.5)
 
                 self.armPose.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
+                self.armPose.pose.position.x -= 0.01
                 self._arm.move_to_pose(self.armPose)
                 rospy.sleep(0.5)
 
                 self._gripper.close(70)
 
                 self.armPose.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
+                self.armPose.pose.position.x -= GRIPPER_OFFSET
                 self._arm.move_to_pose(self.armPose)
             elif entry_id is gripper_grasp_utils.GRIPPER_OPEN:
                 self._gripper.open()

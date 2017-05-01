@@ -15,7 +15,7 @@ GRIPPER_CLOSE = 2
 GRIPPER_MOVETO = 3
 GRIPPER_AUTOPICK = 4
 OFFSET_X = -0.15
-OFFSET_Z = 0.4
+OFFSET_Z = 0.25
 GRIPPER_MESH = 'package://fetch_description/meshes/gripper_link.dae'
 L_FINGER_MESH = 'package://fetch_description/meshes/l_gripper_finger_link.STL'
 R_FINGER_MESH = 'package://fetch_description/meshes/r_gripper_finger_link.STL'
@@ -41,7 +41,7 @@ def makeMatrix(pose):
 
 def b_in_marker(frame_a_marker, frame_b):
     frame_a_marker_pose = copy.deepcopy(frame_a_marker.pose)
-    frame_a_marker_pose.position.x += GRIPPER_OFFSET
+    #frame_a_marker_pose.position.x += GRIPPER_OFFSET
     frame_b_mat = makeMatrix(frame_b)
     base_link_mat = makeMatrix(frame_a_marker_pose)
     dot = np.dot(frame_b_mat, base_link_mat)
@@ -139,7 +139,7 @@ def getMarkersFromPose(poseStamped, preGraspStatus):
     gripper_markers = createMarker(0, 0)
     int_control.interaction_mode = InteractiveMarkerControl.MENU
     int_control.markers.extend(gripper_markers)
-    int_marker.scale = 0.25
+    int_marker.scale = 0.35
 
     # ADD AUTO PICKING
     if preGraspStatus:
