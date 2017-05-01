@@ -20,7 +20,7 @@ class GripperTeleop(object):
         poseStamped = PoseStamped()
         poseStamped.header.frame_id = 'base_link'
         poseStamped.pose = Pose(orientation=Quaternion(0,0,0,1))
-        gripper_im = gripper_grasp_utils.getMarkersFromPose(poseStamped, false)
+        gripper_im = gripper_grasp_utils.getMarkersFromPose(poseStamped, False)
         self._im_server.insert(gripper_im, self.handle_feedback)
         self._im_server.applyChanges()
         
@@ -50,29 +50,43 @@ class GripperTeleop(object):
             self._im_server.insert(interactive_marker)
             self._im_server.applyChanges()
 
-
-
-
-
 class AutoPickTeleop(object):
     def __init__(self, arm, gripper, im_server):
         self._arm = arm
         self._gripper = gripper
+        self.armPose = PoseStamped()
+        self.armPose.header.frame_id = 'base_link'
         self._im_server = im_server
 
     def start(self):
         poseStamped = PoseStamped()
         poseStamped.header.frame_id = 'base_link'
         poseStamped.pose = Pose(orientation=Quaternion(0,0,0,1))
-        obj_im = gripper_grasp_utils.getMarkersFromPose(poseStamped, true)
+        obj_im = gripper_grasp_utils.getMarkersFromPose(poseStamped, True)
         self._im_server.insert(obj_im, feedback_cb=self.handle_feedback)
+        self._im_server.applyChanges()
 
     def handle_feedback(self, feedback):
         if feedback.event_type is InteractiveMarkerFeedback.MENU_SELECT:
             entry_id = feedback.menu_entry_id
-            if entry_id is gripper_grasp_utils.GRIPPER_AUTOPICK:
+            if entry_id is gripper_grasp_utils.GRIPPER_MOVETO:
                 interactive_marker = self._im_server.get(feedback.marker_name)
-                
+                grasp_gripper = interactive_marker.controls[0].markers[0]
+                pre_grasp_gripper = interactive_marker.controls[0].markers[3]
+                lift_gripper = interactive_marker.controls[0].markers[6]
+                self._gripper.open()
+                self.armPose.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
+                self._arm.move_to_pose(self.armPose)
+                rospy.sleep(0.5)
+
+                self.armPose.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
+                self._arm.move_to_pose(self.armPose)
+                rospy.sleep(0.5)
+
+                self._gripper.close(70)
+
+                self.armPose.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
+                self._arm.move_to_pose(self.armPose)
             elif entry_id is gripper_grasp_utils.GRIPPER_OPEN:
                 self._gripper.open()
             elif entry_id is gripper_grasp_utils.GRIPPER_CLOSE:
@@ -83,15 +97,42 @@ class AutoPickTeleop(object):
                 rospy.logerr('INVALID COMMAND')
         elif feedback.event_type is InteractiveMarkerFeedback.POSE_UPDATE:
             interactive_marker = self._im_server.get(feedback.marker_name)
+            grasp_gripper = interactive_marker.controls[0].markers[0]
+            pre_grasp_gripper = interactive_marker.controls[0].markers[3]
+            lift_gripper = interactive_marker.controls[0].markers[6]
             self.armPose.pose = copy.deepcopy(interactive_marker.pose)
-            if self._arm.compute_ik(self.armPose) is True:
-                for gripper_marker in interactive_marker.controls[0].markers:
+            computed_pose = PoseStamped()
+            computed_pose.header.frame_id = 'base_link'
+            computed_pose.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
+            if self._arm.compute_ik(computed_pose) is True:
+                for gripper_marker in interactive_marker.controls[0].markers[:3]:
                     gripper_marker.color.r = 0.0
                     gripper_marker.color.g = 1.0
             else:
-                for gripper_marker in interactive_marker.controls[0].markers:
+                for gripper_marker in interactive_marker.controls[0].markers[:3]:
                     gripper_marker.color.r = 1.0
                     gripper_marker.color.g = 0.0
+            
+            computed_pose.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
+            if self._arm.compute_ik(computed_pose) is True:
+                for gripper_marker in interactive_marker.controls[0].markers[3:6]:
+                    gripper_marker.color.r = 0.0
+                    gripper_marker.color.g = 1.0
+            else:
+                for gripper_marker in interactive_marker.controls[0].markers[3:6]:
+                    gripper_marker.color.r = 1.0
+                    gripper_marker.color.g = 0.0
+            
+            computed_pose.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
+            if self._arm.compute_ik(computed_pose) is True:
+                for gripper_marker in interactive_marker.controls[0].markers[6:9]:
+                    gripper_marker.color.r = 0.0
+                    gripper_marker.color.g = 1.0
+            else:
+                for gripper_marker in interactive_marker.controls[0].markers[6:9]:
+                    gripper_marker.color.r = 1.0
+                    gripper_marker.color.g = 0.0
+            
             self._im_server.erase(feedback.marker_name)
             self._im_server.insert(interactive_marker)
             self._im_server.applyChanges()
@@ -101,12 +142,12 @@ def main():
     rospy.init_node('gripper_teleop')
     arm = Arm()
     gripper = Gripper()
-    im_server = InteractiveMarkerServer('gripper_im_server', q_size=2)
-    auto_pick_im_server = InteractiveMarkerServer('auto_pick_im_server',  q_size=2)
+    im_server = InteractiveMarkerServer('gripper_im_server')
+    auto_pick_im_server = InteractiveMarkerServer('auto_pick_im_server')
     teleop = GripperTeleop(arm, gripper, im_server)
     auto_pick = AutoPickTeleop(arm, gripper, auto_pick_im_server)
     teleop.start()
-    # auto_pick.start()
+    auto_pick.start()
     rospy.spin()
 
 if __name__ == '__main__':
