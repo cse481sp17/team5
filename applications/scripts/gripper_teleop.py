@@ -16,6 +16,7 @@ class GripperTeleop(object):
         self._gripper = gripper
         self._im_server = im_server
         self.armPose = PoseStamped()
+        self.validPose = True
         self.armPose.header.frame_id = 'base_link'
 
     def start(self):
@@ -34,7 +35,10 @@ class GripperTeleop(object):
             elif entry_id is gripper_grasp_utils.GRIPPER_CLOSE:
                 self._gripper.close(70)
             elif entry_id is gripper_grasp_utils.GRIPPER_MOVETO:
-                self._arm.move_to_pose(self.armPose)
+                if self.validPose:
+                    self._arm.move_to_pose(self.armPose)
+                else:
+                    print "Invalid Pose: ", self.armPose
             else:
                 rospy.logerr('INVALID COMMAND')
         elif feedback.event_type is InteractiveMarkerFeedback.POSE_UPDATE:
@@ -44,11 +48,13 @@ class GripperTeleop(object):
                 for gripper_marker in interactive_marker.controls[0].markers:
                     gripper_marker.color.r = 0.0
                     gripper_marker.color.g = 1.0
+                self.validPose = True
             else:
                 for gripper_marker in interactive_marker.controls[0].markers:
                     gripper_marker.color.r = 1.0
                     gripper_marker.color.g = 0.0
-            self._im_server.erase(feedback.marker_name)
+                self.validPose = False
+            #self._im_server.erase(feedback.marker_name)
             self._im_server.insert(interactive_marker)
             self._im_server.applyChanges()
 
