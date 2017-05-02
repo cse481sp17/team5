@@ -27,8 +27,12 @@ def transform_to_pose(matrix):
     # print quat_from_mat
     pose.orientation = Quaternion(quat_from_mat[0], quat_from_mat[1], quat_from_mat[2], quat_from_mat[3])
     vector = np.dot(matrix, np.array([0, 0, 0, 1]))
+    x = matrix[0][3]
+    y = matrix[1][3]
+    z = matrix[2][3]
     # print vector
-    pose.position = Point(vector[0], vector[1], vector[2])
+    # pose.position = Point(vector[0], vector[1], vector[2])
+    pose.position = Point(x, y, z)
     return pose
 
 def makeMatrix(pose):

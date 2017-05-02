@@ -74,30 +74,46 @@ class AutoPickTeleop(object):
         self._im_server.insert(obj_im, feedback_cb=self.handle_feedback)
         self._im_server.applyChanges()
 
+
     def handle_feedback(self, feedback):
         if feedback.event_type is InteractiveMarkerFeedback.MENU_SELECT:
             entry_id = feedback.menu_entry_id
             if entry_id is gripper_grasp_utils.GRIPPER_MOVETO:
                 interactive_marker = self._im_server.get(feedback.marker_name)
-                grasp_gripper = interactive_marker.controls[0].markers[0]
-                pre_grasp_gripper = interactive_marker.controls[0].markers[3]
-                lift_gripper = interactive_marker.controls[0].markers[6]
+                grasp_gripper = copy.deepcopy(interactive_marker.controls[0].markers[0])
+                grasp_gripper.pose.position.x -= GRIPPER_OFFSET
+
+                pre_grasp_gripper = copy.deepcopy(interactive_marker.controls[0].markers[3])
+                pre_grasp_gripper.pose.position.x -= GRIPPER_OFFSET
+                lift_gripper = copy.deepcopy(interactive_marker.controls[0].markers[6])
+                lift_gripper.pose.position.x -= GRIPPER_OFFSET
                 self._gripper.open()
-                self.armPose.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
-                self.armPose.pose.position.x -= GRIPPER_OFFSET
-                self._arm.move_to_pose(self.armPose)
+                #self.armPose.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
+                #self.armPose.pose.position.x -= GRIPPER_OFFSET
+                #self.armPose.pose = pre_grasp_gripper.pose
+                goal = PoseStamped()
+                goal.header.frame_id = 'base_link'
+                goal.pose = gripper_grasp_utils.b_in_marker(pre_grasp_gripper, self.armPose.pose)
+                #goal.pose.position.x -= GRIPPER_OFFSET
+                self._arm.move_to_pose(goal)
+                #print self.armPose.position
                 rospy.sleep(0.5)
 
-                self.armPose.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
-                self.armPose.pose.position.x -= 0.01
-                self._arm.move_to_pose(self.armPose)
+                #self.armPose.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
+                goal.pose = gripper_grasp_utils.b_in_marker(grasp_gripper, self.armPose.pose)
+                #goal.pose.position.x -= GRIPPER_OFFSET
+                self._arm.move_to_pose(goal)
                 rospy.sleep(0.5)
+                #print self.armPose.position
 
                 self._gripper.close(70)
 
-                self.armPose.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
-                self.armPose.pose.position.x -= GRIPPER_OFFSET
-                self._arm.move_to_pose(self.armPose)
+                #self.armPose.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
+                #self.armPose.pose.position.x -= GRIPPER_OFFSET
+                goal.pose = gripper_grasp_utils.b_in_marker(lift_gripper, self.armPose.pose)
+                #goal.pose.position.x -= GRIPPER_OFFSET
+                self._arm.move_to_pose(goal)
+                #print self.armPose.position
             elif entry_id is gripper_grasp_utils.GRIPPER_OPEN:
                 self._gripper.open()
             elif entry_id is gripper_grasp_utils.GRIPPER_CLOSE:
