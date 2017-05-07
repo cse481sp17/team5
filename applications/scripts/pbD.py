@@ -63,19 +63,13 @@ class PoseSaver(object):
         else:
             tag_id = int(lines)
             marker = self.reader.markers[tag_id]
-            action = PoseExecutable(PoseExecutable.MOVETO, marker.id, goal)
-            #goal.header.frame
-        
-        self.actions.append(action)
-
-        
+            action = PoseExecutable(PoseExecutable.MOVETO, marker.id, goal, marker.pose.pose)
+        self.actions.append(action)  
 
     def open_gripper(self):
         action = PoseExecutable(PoseExecutable.OPEN, None, None)
         self.actions.append(action)
         self.gripper.open()
-
-
 
     def close_gripper(self):
         action = PoseExecutable(PoseExecutable.CLOSE, None, None)
@@ -104,13 +98,7 @@ def wait_for_time():
 
 def main():
     rospy.init_node('pbD')
-    # try:
-    #     map_list_data = pickle.load(open(PICKLE_FILE, "rb"))
-    # except:
-    #     print 'Pickle File Empty'
-    #     map_list_data = {}
-    #     pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
-    
+  
     wait_for_time()
     pose_saver = PoseSaver()
 

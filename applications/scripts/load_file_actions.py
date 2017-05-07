@@ -4,6 +4,7 @@ import rospy
 import pickle
 import numpy as np
 import actionlib
+import tf
 import fetch_api
 from geometry_msgs.msg import PoseStamped
 from pose_executable import *
@@ -20,7 +21,6 @@ class ArTagReader(object):
 def transform_to_pose(matrix):
     pose = Pose()
     quat_from_mat = tft.quaternion_from_matrix(matrix)
-    # print quat_from_mat
     pose.orientation = Quaternion(quat_from_mat[0], quat_from_mat[1], quat_from_mat[2], quat_from_mat[3])
     vector = np.dot(matrix, np.array([0, 0, 0, 1]))
     x = matrix[0][3]
@@ -37,14 +37,6 @@ def makeMatrix(pose):
     base_link_mat[2][3] = pose.position.z
     return base_link_mat
 
-def b_in_marker(frame_a_marker, frame_b):
-    frame_a_marker_pose = copy.deepcopy(frame_a_marker.pose)
-    #frame_a_marker_pose.position.x += GRIPPER_OFFSET
-    frame_b_mat = makeMatrix(frame_b)
-    base_link_mat = makeMatrix(frame_a_marker_pose)
-    dot = np.dot(frame_b_mat, base_link_mat)
-    return transform_to_pose(dot)
-
 def usage():
     print 'Usage: rosrun applications load_file_actions.py <filename.p>'
 
@@ -56,12 +48,16 @@ def wait_for_time():
 
 def getPoseMoveTo(pose_action, markers):
     for marker in markers:
-        if frame == str(marker.id):
-    ar2wrist = pose2transform(action.arPose, action.wristPose, True)
-    wrist = b_in_marker()
-    pose_stamped = PoseStamped()
-    pose_stamped.header.frame_id = "base_link"
-    pose_stamped.pose = matrix2pose(wrist)
+        if pose_action.frame == marker.id:
+            wrist2 = makeMatrix(pose_action.pose) 
+            tag2 = makeMatrix(pose_action.arPose)  
+            tag2 = tf.transformations.inverse_matrix(tag)
+            result = np.dot(wrist2, tag2)
+            result = np.dot(marker.pose.pose, result)
+
+            pose_stamped = PoseStamped()
+            pose_stamped.header.frame_id = "base_link"
+            pose_stamped.pose = transform_to_pose(result)
     return pose_stamped
 
 
@@ -100,10 +96,15 @@ def main():
         elif pose_actions.action == PoseExecutable.CLOSE:
             gripper.close()
         elif pose_actions.action == PoseExecutable.MOVETO:
-            pose_stamped = getPoseMoveTo(pose_actions, reader.markers)
+            if pose_actions.frame == 'base_link':
+                pose_stamped = PoseStamped()
+                pose_stamped.header.frame_id = "base_link"
+                pose_stamped.pose = pose_actions.pose
+            else:
+                pose_stamped = getPoseMoveTo(pose_actions, reader.markers)
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=20)
             if error is not None:
-                print 'error in pose {}, please try again, exiting'.format(pose_actions.action)
+                print 'error moving to {}, please try again, exiting'.format(pose_actions.pose)
                 return
         else:
             print 'invalid command {}'.format(pose_actions.action)
