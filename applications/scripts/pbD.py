@@ -4,21 +4,95 @@ import fetch_api
 import rospy
 import pickle
 import geometry_msgs.msg
+from pose_executable import *
 import sys
+from robot_controllers_msgs.msg import QueryControllerStatesGoal, ControllerState, QueryControllerStatesAction
+from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
+import tf
+import actionlib
+from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
 
-PICKLE_FILE='pbd_poses.p'
-map_list_data = {}
+class ArTagReader(object):
+    def __init__(self):
+        self.markers = []
+
+    def callback(self, msg):
+        self.markers = msg.markers
 
 class PoseSaver(object):
-    def createProgram
+    def __init__(self):
+        self.actions = []
+        self.reader = ArTagReader()
+        rospy.sleep(0.1)
+        sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.reader.callback)
+        rospy.sleep(0.1)
+        self.tf_listener = tf.TransformListener()
+        self._controller_client = actionlib.SimpleActionClient('/query_controller_states', QueryControllerStatesAction)
+        self.gripper =  fetch_api.Gripper()
+
+    def create_program(self):
+        goal = QueryControllerStatesGoal()
+        state = ControllerState()
+        state.name = 'arm_controller/follow_joint_trajectory'
+        state.state = ControllerState.STOPPED
+        goal.updates.append(state)
+        self._controller_client.send_goal(goal)
+        self._controller_client.wait_for_result()
+
+    def save_pose(self):
+        goal = Pose()
+        
+        (transform, rotation) = self.tf_listener.lookupTransform('/base_link', '/wrist_roll_link', rospy.Time(0))
+        goal.position.x = transform[0]
+        goal.position.y = transform[1]
+        goal.position.z = transform[2]
+        goal.orientation.x = rotation[0]
+        goal.orientation.y = rotation[1]
+        goal.orientation.z = rotation[2]
+        goal.orientation.w = rotation[3]
+        print 'Is the pose relative to base frame or to a tag?'
+        print 'base_frame'
+        count = 0
+        for marker in self.reader.markers:
+            print "Index %(first)d is: tag %(second)d" % {"first": count, "second":marker.id}
+            count += 1
+
+        lines = raw_input('')
+        if lines == 'base_frame':
+            action = PoseExecutable(PoseExecutable.MOVETO, 'base_link', goal)
+        else:
+            tag_id = int(lines)
+            marker = self.reader.markers[tag_id]
+            action = PoseExecutable(PoseExecutable.MOVETO, marker.id, goal)
+            #goal.header.frame
+        
+        self.actions.append(action)
+
+        
+
+    def open_gripper(self):
+        action = PoseExecutable(PoseExecutable.OPEN, None, None)
+        self.actions.append(action)
+        self.gripper.open()
+
+
+
+    def close_gripper(self):
+        action = PoseExecutable(PoseExecutable.CLOSE, None, None)
+        self.actions.append(action)
+        self.gripper.close()
+
+    def save_program(self, filename):
+        pickle.dump(self.actions, open(filename, "wb" ))
+
 
 def print_usage():
     print 'Commands:'
     print ' create_program: relaxes robot'
     print ' open_gripper: opens the gripper'
     print ' close_gripper: closes the gripper at max force'
-    print ' save_pose <relation>: saves the current pose relative to <relation>'
-    print ' save_program: saves the current program'
+    print ' save_pose: saves the current pose relative to'
+    print ' save_program <name>: saves the current program to <name>'
     print ' help: Show this list of commands'
 
 
@@ -28,36 +102,8 @@ def wait_for_time():
     while rospy.Time().now().to_sec() == 0:
         pass
 
-
-
-def save_new_pose(name):
-    map_list_data[name] = current_amcl
-    pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
-
-def amcl_callback(msg):
-    global current_amcl
-    current_amcl = msg
-
-def delete_pose(name):
-    if name in map_list_data:
-        map_list_data.pop(name)
-        pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )        
-    else:
-        print 'No such pose \'{}\''.format(name)
-
-def goto_pose(name):
-    if name in map_list_data:
-        target_pose = map_list_data[name]
-        message = geometry_msgs.msg.PoseStamped()
-        message.header = target_pose.header
-        message.pose = target_pose.pose.pose
-        target_pose_pub.publish(message)
-    else:
-        print 'No such pose \'{}\''.format(name)
-
 def main():
-    global map_list_data
-    rospy.init_node('map_annotator')
+    rospy.init_node('pbD')
     # try:
     #     map_list_data = pickle.load(open(PICKLE_FILE, "rb"))
     # except:
@@ -66,29 +112,25 @@ def main():
     #     pickle.dump(map_list_data, open(PICKLE_FILE, "wb" ) )
     
     wait_for_time()
-    global target_pose_pub
-    target_pose_pub = rospy.Publisher('/move_base_simple/goal', geometry_msgs.msg.PoseStamped, queue_size=10)
+    pose_saver = PoseSaver()
 
-    amcl_sub = rospy.Subscriber('amcl_pose', geometry_msgs.msg.PoseWithCovarianceStamped, amcl_callback)
     argv = rospy.myargv()
     while True:
         lines = sys.stdin.readline()
         command = lines.strip()
-        if command != 'list' and command != 'help':
-            commandList = lines.split(' ', 1)
-            name = commandList[1].strip()
-            command = commandList[0].strip()
 
         if command == 'create_program':
-            createProgram()
+            pose_saver.create_program()
         elif command == 'save_pose':
-            save_new_pose(name)
+            pose_saver.save_pose()
         elif command == 'open_gripper':
-            delete_pose(name)
+            pose_saver.open_gripper()
         elif command == 'close_gripper':
-            goto_pose(name)
-        elif command == 'save_program':
-
+            pose_saver.close_gripper()
+        elif command.startswith('save_program'):
+            commandList = lines.split(' ', 1)
+            name = commandList[1].strip()
+            pose_saver.save_program(name)
         elif command == 'help':
             print_usage()
         else:
