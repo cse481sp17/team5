@@ -109,10 +109,10 @@ def main():
     # Run through each of the actions
     for pose_action in pose_actions:
         if pose_action.actionType == PoseExecutable.OPEN:
-            print 'Opening the gripper'.
+            print 'Opening the gripper'
             gripper.open()
         elif pose_action.actionType == PoseExecutable.CLOSE:
-            print 'Closeing the gripper'.
+            print 'Closeing the gripper'
             gripper.close()
         elif pose_action.actionType == PoseExecutable.MOVETO:
             print 'Moving to location.'
