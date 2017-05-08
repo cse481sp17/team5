@@ -81,8 +81,6 @@ def main():
         return
     
     rospy.init_node("load_file_actions")
-    rospy.init_node('pbD')
-    
 
     wait_for_time()
     print 'Time has begun.'
