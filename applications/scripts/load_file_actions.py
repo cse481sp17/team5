@@ -6,10 +6,11 @@ import numpy as np
 import actionlib
 import tf
 import fetch_api
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion, Point
 from pose_executable import *
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
+import tf.transformations as tft
 
 class ArTagReader(object):
     def __init__(self):
@@ -22,7 +23,6 @@ def transform_to_pose(matrix):
     pose = Pose()
     quat_from_mat = tft.quaternion_from_matrix(matrix)
     pose.orientation = Quaternion(quat_from_mat[0], quat_from_mat[1], quat_from_mat[2], quat_from_mat[3])
-    vector = np.dot(matrix, np.array([0, 0, 0, 1]))
     x = matrix[0][3]
     y = matrix[1][3]
     z = matrix[2][3]
@@ -35,6 +35,10 @@ def makeMatrix(pose):
     base_link_mat[0][3] = pose.position.x
     base_link_mat[1][3] = pose.position.y
     base_link_mat[2][3] = pose.position.z
+    base_link_mat[3][0] = 0
+    base_link_mat[3][1] = 0
+    base_link_mat[3][2] = 0
+    base_link_mat[3][3] = 1
     return base_link_mat
 
 def usage():
@@ -99,36 +103,31 @@ def main():
             print 'Opening the gripper'
             gripper.open()
         elif pose_action.actionType == PoseExecutable.CLOSE:
-            print 'Closeing the gripper'
+            print 'Closing the gripper'
             gripper.close()
         elif pose_action.actionType == PoseExecutable.MOVETO:
             print 'Moving to location.'
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = "base_link"
             if pose_action.relativeFrame == 'base_link':
-                print 'Moving to base link.'
                 pose_stamped.pose = pose_action.pose
             else:
-                print 'Moving to wrist link.'
                 for marker in reader.markers:
                     if pose_action.relativeFrame == marker.id:
                         wrist2 = makeMatrix(pose_action.pose) 
-                        tag2 = makeMatrix(pose_action.arPose)  
+                        tag = makeMatrix(pose_action.arPose)  
                         tag2 = tf.transformations.inverse_matrix(tag)
-                        result = np.dot(wrist2, tag2)
-                        result = np.dot(marker.pose.pose, result)
+                        result = np.dot(tag2, wrist2)
+                        result2 = np.dot(makeMatrix(marker.pose.pose), result)
 
                         pose_stamped = PoseStamped()
                         pose_stamped.header.frame_id = "base_link"
-                        pose_stamped.pose = transform_to_pose(result)
-                        print '{}'.format(pose_stamped.pose)
-
-            error = arm.move_to_pose(pose_stamped, allowed_planning_time=20)
+                        pose_stamped.pose = transform_to_pose(result2)
+            error = arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
             if error is not None:
-                print 'Error moving to {}, exiting.'.format(pose_action.pose)
-                return
+                print 'Error moving to {}.'.format(pose_action.pose)
         else:
             print 'invalid command {}'.format(pose_action.action)
+
 if __name__ == '__main__':
-    print 'Demonstration.'
     main()
