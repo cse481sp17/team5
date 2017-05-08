@@ -105,10 +105,13 @@ def main():
     gripper = fetch_api.Gripper()
     arm = fetch_api.Arm()
 
+    print 'Arm and gripper instantiated.'
+
     rospy.sleep(1.0)
 
     # Run through each of the actions
     for pose_action in pose_actions:
+        print 'Performing action.'
         if pose_action.actionType == PoseExecutable.OPEN:
             print 'Opening the gripper'
             gripper.open()
@@ -129,7 +132,7 @@ def main():
                 return
         else:
             print 'invalid command {}'.format(pose_action.action)
-
+        print 'Out of pose actions.'
 if __name__ == '__main__':
     print 'Demonstration.'
     main()
