@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 import rospy
 import pickle
@@ -47,8 +47,9 @@ def wait_for_time():
         pass
 
 def getPoseMoveTo(pose_action, markers):
+    
     for marker in markers:
-        if pose_action.frame == marker.id:
+        if pose_action.relativeFrame == marker.id:
             wrist2 = makeMatrix(pose_action.pose) 
             tag2 = makeMatrix(pose_action.arPose)  
             tag2 = tf.transformations.inverse_matrix(tag)
@@ -58,29 +59,39 @@ def getPoseMoveTo(pose_action, markers):
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = "base_link"
             pose_stamped.pose = transform_to_pose(result)
-    return pose_stamped
+            return pose_stamped
+    return None
 
 
 def main():
-    rospy.init_node("load_file_actions")
-    wait_for_time()
-    pose_execs = None
+    pose_actions = None
 
+    # Get the actions from the pickel file.
     argv = rospy.myargv()
     if len(argv) < 2:
         usage()
         return
     fileName = argv[1]
     try:
-        pose_execs = pickle.load(open(fileName, "rb"))
+        pose_actions = pickle.load(open(fileName, "rb"))
+        print '{} loaded.'.format(fieName)
     except:
-        print 'Invalid File'
+        print '{} could not be loaded.'.format(fieName)
         usage()
         return
-    print 'file loaded'
+    
+    rospy.init_node("load_file_actions")
+    rospy.init_node('pbD')
+    
+
+    wait_for_time()
+    print 'Time has begun.'
+
+    # Start the arm.
     reader = ArTagReader()
     sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, reader.callback)
     controller_client = actionlib.SimpleActionClient('/query_controller_states', QueryControllerStatesAction)
+    rospy.sleep(1.0)
     goal = QueryControllerStatesGoal()
     state = ControllerState()
     state.name = 'arm_controller/follow_joint_trajectory'
@@ -88,23 +99,36 @@ def main():
     goal.updates.append(state)
     controller_client.send_goal(goal)
     controller_client.wait_for_result()
+
+
     gripper = fetch_api.Gripper()
     arm = fetch_api.Arm()
-    for pose_actions in pose_execs:
-        if pose_actions.action == PoseExecutable.OPEN:
+
+    rospy.sleep(1.0)
+
+    # Run through each of the actions
+    for pose_action in pose_actions:
+        if pose_action.actionType == PoseExecutable.OPEN:
+            print 'Opening the gripper'.
             gripper.open()
-        elif pose_actions.action == PoseExecutable.CLOSE:
+        elif pose_action.actionType == PoseExecutable.CLOSE:
+            print 'Closeing the gripper'.
             gripper.close()
-        elif pose_actions.action == PoseExecutable.MOVETO:
-            if pose_actions.frame == 'base_link':
+        elif pose_action.actionType == PoseExecutable.MOVETO:
+            print 'Moving to location.'
+            if pose_action.frame == 'base_link':
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = "base_link"
-                pose_stamped.pose = pose_actions.pose
+                pose_stamped.pose = pose_action.pose
             else:
-                pose_stamped = getPoseMoveTo(pose_actions, reader.markers)
+                pose_stamped = getPoseMoveTo(pose_action, reader.markers)
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=20)
             if error is not None:
-                print 'error moving to {}, please try again, exiting'.format(pose_actions.pose)
+                print 'Error moving to {}, exiting.'.format(pose_action.pose)
                 return
         else:
-            print 'invalid command {}'.format(pose_actions.action)
+            print 'invalid command {}'.format(pose_action.action)
+
+if __name__ == '__main__':
+    print 'Demonstration.'
+    main()
