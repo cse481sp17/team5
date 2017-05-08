@@ -96,7 +96,10 @@ def main():
     state.state = ControllerState.RUNNING
     goal.updates.append(state)
     controller_client.send_goal(goal)
+
+    print 'Waiting for arm to start.'
     controller_client.wait_for_result()
+    print 'Arm has been started.'
 
 
     gripper = fetch_api.Gripper()
@@ -114,7 +117,7 @@ def main():
             gripper.close()
         elif pose_action.actionType == PoseExecutable.MOVETO:
             print 'Moving to location.'
-            if pose_action.frame == 'base_link':
+            if pose_action.relativeFrame == 'base_link':
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = "base_link"
                 pose_stamped.pose = pose_action.pose
