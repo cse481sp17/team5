@@ -110,7 +110,7 @@ def main():
                 pose_stamped.pose = pose_action.pose
             else:
                 print 'Moving to wrist link.'
-                for marker in markers:
+                for marker in reader.markers:
                     if pose_action.relativeFrame == marker.id:
                         wrist2 = makeMatrix(pose_action.pose) 
                         tag2 = makeMatrix(pose_action.arPose)  
@@ -121,6 +121,7 @@ def main():
                         pose_stamped = PoseStamped()
                         pose_stamped.header.frame_id = "base_link"
                         pose_stamped.pose = transform_to_pose(result)
+                        print '{}'.format(pose_stamped.pose)
 
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=20)
             if error is not None:
