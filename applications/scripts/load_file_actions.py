@@ -46,23 +46,6 @@ def wait_for_time():
     while rospy.Time().now().to_sec() == 0:
         pass
 
-def getPoseMoveTo(pose_action, markers):
-    
-    for marker in markers:
-        if pose_action.relativeFrame == marker.id:
-            wrist2 = makeMatrix(pose_action.pose) 
-            tag2 = makeMatrix(pose_action.arPose)  
-            tag2 = tf.transformations.inverse_matrix(tag)
-            result = np.dot(wrist2, tag2)
-            result = np.dot(marker.pose.pose, result)
-
-            pose_stamped = PoseStamped()
-            pose_stamped.header.frame_id = "base_link"
-            pose_stamped.pose = transform_to_pose(result)
-            return pose_stamped
-    return None
-
-
 def main():
     pose_actions = None
 
@@ -120,19 +103,31 @@ def main():
             gripper.close()
         elif pose_action.actionType == PoseExecutable.MOVETO:
             print 'Moving to location.'
+            pose_stamped = PoseStamped()
+            pose_stamped.header.frame_id = "base_link"
             if pose_action.relativeFrame == 'base_link':
-                pose_stamped = PoseStamped()
-                pose_stamped.header.frame_id = "base_link"
+                print 'Moving to base link.'
                 pose_stamped.pose = pose_action.pose
             else:
-                pose_stamped = getPoseMoveTo(pose_action, reader.markers)
+                print 'Moving to wrist link.'
+                for marker in markers:
+                    if pose_action.relativeFrame == marker.id:
+                        wrist2 = makeMatrix(pose_action.pose) 
+                        tag2 = makeMatrix(pose_action.arPose)  
+                        tag2 = tf.transformations.inverse_matrix(tag)
+                        result = np.dot(wrist2, tag2)
+                        result = np.dot(marker.pose.pose, result)
+
+                        pose_stamped = PoseStamped()
+                        pose_stamped.header.frame_id = "base_link"
+                        pose_stamped.pose = transform_to_pose(result)
+
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=20)
             if error is not None:
                 print 'Error moving to {}, exiting.'.format(pose_action.pose)
                 return
         else:
             print 'invalid command {}'.format(pose_action.action)
-        print 'Out of pose actions.'
 if __name__ == '__main__':
     print 'Demonstration.'
     main()
