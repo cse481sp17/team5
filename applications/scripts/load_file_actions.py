@@ -74,9 +74,9 @@ def main():
     fileName = argv[1]
     try:
         pose_actions = pickle.load(open(fileName, "rb"))
-        print '{} loaded.'.format(fieName)
+        print '{} loaded.'.format(fileName)
     except:
-        print '{} could not be loaded.'.format(fieName)
+        print '{} could not be loaded.'.format(fileName)
         usage()
         return
     
