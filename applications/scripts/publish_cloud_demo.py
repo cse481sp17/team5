@@ -33,7 +33,6 @@ def main():
     while not rospy.is_shutdown():
         cloud.header.stamp = rospy.Time.now()
         pub.publish(cloud)
-        print cloud.header
         rate.sleep()                                          
     
     
