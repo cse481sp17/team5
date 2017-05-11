@@ -78,6 +78,7 @@ namespace perception {
     }
 
     void SegmentSurfaceObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, pcl::PointIndices::Ptr surface_indices, std::vector<pcl::PointIndices>* object_indices) {
+
         pcl::ExtractIndices<PointC> extract;
         pcl::PointIndices::Ptr above_surface_indices(new pcl::PointIndices());
         extract.setInputCloud(cloud);
@@ -88,8 +89,10 @@ namespace perception {
         double cluster_tolerance;
         int min_cluster_size, max_cluster_size;
         ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
-        ros::param::param("ec_min_cluster_size", min_cluster_size, 10);
-        ros::param::param("ec_max_cluster_size", max_cluster_size, 10000);
+        ros::param::param("ec_min_cluster_size", min_cluster_size, 300);
+        ros::param::param("ec_max_cluster_size", max_cluster_size, 100000);
+
+
         // Extracts clustered objects
         pcl::EuclideanClusterExtraction<PointC> euclid;
         euclid.setInputCloud(cloud);
@@ -97,43 +100,56 @@ namespace perception {
         euclid.setClusterTolerance(cluster_tolerance);
         euclid.setMinClusterSize(min_cluster_size);
         euclid.setMaxClusterSize(max_cluster_size);
+        // ROS_INFO("Found cloud %ld points", cloud->points.size());
+
+        // ROS_INFO("Found surface_indices %ld indicies", surface_indices->indices.size());
+        
+        // ROS_INFO("Found above_surface_indices %ld indicies", above_surface_indices->indices.size());
+
         euclid.extract(*object_indices);
         // Find the size of the smallest and the largest object,
         // where size = number of points in the cluster
-        // size_t min_size = std::numeric_limits<size_t>::max();
-        // size_t max_size = std::numeric_limits<size_t>::min();
-        // for (size_t i = 0; i < object_indices->size(); ++i) {
-        //     pcl::PointIndices index = (*object_indices)[i];
-        //     size_t curClusterSize = index.indices.size();
-        //     if(curClusterSize > max_size) {
-        //         max_size = curClusterSize;
-        //     }
-        //     if(curClusterSize < min_size) {
-        //         min_size = curClusterSize;
-        //     }
-        // }
-        // ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
-        //         object_indices->size(), min_size, max_size);
+        size_t min_size = std::numeric_limits<size_t>::max();
+        size_t max_size = std::numeric_limits<size_t>::min();
+        for (size_t i = 0; i < object_indices->size(); ++i) {
+            pcl::PointIndices index = (*object_indices)[i];
+            size_t curClusterSize = index.indices.size();
+            if(curClusterSize > max_size) {
+                max_size = curClusterSize;
+            }
+            if(curClusterSize < min_size) {
+                min_size = curClusterSize;
+            }
+        }
+        ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
+                object_indices->size(), min_size, max_size);
     }
 
     Segmenter::Segmenter(const ros::Publisher& surface_points_pub, const ros::Publisher& marker_pub)
         : surface_points_pub_(surface_points_pub), marker_pub_(marker_pub){}
 
     void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
+        PointCloudC::Ptr cloud2(new PointCloudC());
+        cloud2->is_dense = false;
+        pcl::fromROSMsg(msg, *cloud2);
+
+        std::vector<int> indices;
         PointCloudC::Ptr cloud(new PointCloudC());
-        pcl::fromROSMsg(msg, *cloud);
+        pcl::removeNaNFromPointCloud(*cloud2, *cloud, indices);
+        
+
         ROS_INFO("CLOUD REC");
         pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
         SegmentSurface(cloud, table_inliers);
         PointCloudC::Ptr segmented_cloud(new PointCloudC);
 
-        // Extract subset of original_cloud into segmented_cloud:
+        // // Extract subset of original_cloud into segmented_cloud:
         pcl::ExtractIndices<PointC> extract;
         extract.setInputCloud(cloud);
         extract.setIndices(table_inliers);
         extract.filter(*segmented_cloud);
 
-        // SEND MARKER FOR TABLE
+        // // SEND MARKER FOR TABLE
         visualization_msgs::Marker table_marker;
         table_marker.ns = "table";
         table_marker.header.frame_id = "base_link";
@@ -143,18 +159,30 @@ namespace perception {
         table_marker.color.a = 0.8;
         marker_pub_.publish(table_marker);
 
-        // SEGMENT TOP OBJECTS
+        // Publish Table Top Items
+        extract.setNegative(true);
+        extract.filter(*segmented_cloud);
+        sensor_msgs::PointCloud2 msg_out;
+        pcl::toROSMsg(*segmented_cloud, msg_out);
+        surface_points_pub_.publish(msg_out);
+        
+        // // SEGMENT TOP OBJECTS
         std::vector<pcl::PointIndices> object_indices;
-        SegmentSurfaceObjects(segmented_cloud, table_inliers, &object_indices);
+
+        SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
+
         for (size_t i = 0; i < object_indices.size(); ++i) {
-            // Reify indices into a point cloud of the object.
-            pcl::PointIndices::Ptr index(new pcl::PointIndices);
-            *index = object_indices[i];
+        //     // Reify indices into a point cloud of the object.
+            pcl::PointIndices::Ptr indice(new pcl::PointIndices);
+            *indice = object_indices[i];
             PointCloudC::Ptr object_cloud(new PointCloudC());
+            
             // TODO: fill in object_cloud using indices
-            for(size_t j = 0; j < index->indices.size(); ++j) {
-                object_cloud->points.push_back(segmented_cloud->points[index->indices[j]]);
-            }
+            pcl::ExtractIndices<PointC> extract3;
+            extract3.setInputCloud(cloud);
+            extract3.setIndices(indice);
+            extract3.setNegative(false);
+            extract3.filter(*object_cloud);
             // Publish a bounding box around it.
             visualization_msgs::Marker object_marker;
             object_marker.ns = "objects";
@@ -166,13 +194,6 @@ namespace perception {
             object_marker.color.g = 1;
             object_marker.color.a = 0.9;
             marker_pub_.publish(object_marker);
-        }
-        // PUBLISH TOP CLOUD
-        extract.setNegative(true);
-        sensor_msgs::PointCloud2 msg_out;
-        extract.filter(*segmented_cloud);
-        pcl::toROSMsg(*segmented_cloud, msg_out);
-        surface_points_pub_.publish(msg_out);
-        ROS_INFO("Published Point and Marker");        
+        }    
     }
 }  // namespace perception
