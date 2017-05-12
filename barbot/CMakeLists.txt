@@ -10,6 +10,7 @@ project(barbot)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  perception
 )
 
 ## System dependencies are found with CMake's conventions
@@ -53,11 +54,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  ArmToPose.srv
+  SetGripper.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -102,9 +103,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES barbot
-#  CATKIN_DEPENDS roscpp rospy
+    INCLUDE_DIRS include
+    LIBRARIES barbot
+#    CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
 
@@ -116,6 +117,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -139,6 +141,10 @@ include_directories(
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
+set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
+target_link_libraries(barbot_segment_objects_main
+   ${catkin_LIBRARIES}
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

@@ -15,6 +15,8 @@ class ActionServiceActuator(object):
     ActionServiceActuator waits for service, gets the desired value, carries out the required action
     """
     def __init__(self):
+        self._grip = fetch_api.Gripper()
+        self._arm = fetch_api.Arm()
         pass
 
 
