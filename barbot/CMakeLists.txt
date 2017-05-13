@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   perception
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -47,11 +48,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  UserAction.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -116,10 +116,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
+#include_directories(
+#  include
+#  ${catkin_INCLUDE_DIRS}
+#)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -141,10 +141,10 @@ include_directories(
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
-target_link_libraries(barbot_segment_objects_main
-   ${catkin_LIBRARIES}
-)
+# set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
+# target_link_libraries(barbot_segment_objects_main
+#   ${catkin_LIBRARIES}
+#)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
