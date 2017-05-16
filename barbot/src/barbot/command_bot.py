@@ -4,7 +4,7 @@ class Commander(object):
     GO_TO = 3
     MOVE_ARM_TO = 4
 
-    def __init__(self, actionType, relativeFrame = None, pose = None, arPose = None, ):
+    def __init__(self, actionType, relativeFrame = None, pose = None, arPose = None):
         self.actionType = actionType
         self.relativeFrame = frame
         self.pose = pose

@@ -12,6 +12,9 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 import tf.transformations as tft
 
+DISPENSE_TIME = 1.0
+PICKLE_FILE_DISPENSE='dispenser.p'
+
 class ArTagReader(object):
     def __init__(self):
         self.markers = []
@@ -126,6 +129,8 @@ def main():
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
             if error is not None:
                 print 'Error moving to {}.'.format(pose_action.pose)
+            if fileName is PICKLE_FILE_DISPENSE and count == 2:
+                rospy.sleep(DISPENSE_TIME)
         else:
             print 'invalid command {}'.format(pose_action.action)
 

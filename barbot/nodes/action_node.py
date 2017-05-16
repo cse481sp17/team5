@@ -1,7 +1,14 @@
 #!/usr/bin/env python
-
 import fetch_api
 import rospy
+import pickle
+import copy
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
+from visualization_msgs.msg import Marker
+from barbot.msg import PoseNames
+from barbot.msg import UserAction
+import geometry_msgs.msg
 from barbot.srv import *
 
 def wait_for_time():
@@ -22,7 +29,7 @@ class ActionServiceActuator(object):
 
 def main():
     rospy.init_node('bar_bot_actuator')
-    pass
+    
 
 
 if __name__ == '__main__':
