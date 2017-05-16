@@ -141,11 +141,12 @@ catkin_package(
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-# set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
-# target_link_libraries(barbot_segment_objects_main
-#   ${catkin_LIBRARIES}
-#)
+set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
 
+add_dependencies(barbot_segment_objects_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(barbot_segment_objects_main
+  ${catkin_LIBRARIES}
+)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

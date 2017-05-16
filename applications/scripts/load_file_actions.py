@@ -12,7 +12,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 import tf.transformations as tft
 
-DISPENSE_TIME = 1.0
+DISPENSE_TIME = 5.0
 PICKLE_FILE_DISPENSE='dispenser.p'
 
 class ArTagReader(object):
@@ -98,9 +98,11 @@ def main():
     print 'Arm and gripper instantiated.'
 
     rospy.sleep(1.0)
-
+    count = 0
     # Run through each of the actions
     for pose_action in pose_actions:
+        
+
         print 'Performing action.'
         if pose_action.actionType == PoseExecutable.OPEN:
             print 'Opening the gripper'
@@ -109,6 +111,7 @@ def main():
             print 'Closing the gripper'
             gripper.close()
         elif pose_action.actionType == PoseExecutable.MOVETO:
+            count += 1
             print 'Moving to location.'
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = "base_link"
@@ -126,11 +129,14 @@ def main():
                         pose_stamped = PoseStamped()
                         pose_stamped.header.frame_id = "base_link"
                         pose_stamped.pose = transform_to_pose(result2)
+            
             error = arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
+            if fileName == PICKLE_FILE_DISPENSE and count == 2:
+                print 'Dispensing!'
+                rospy.sleep(DISPENSE_TIME)
             if error is not None:
                 print 'Error moving to {}.'.format(pose_action.pose)
-            if fileName is PICKLE_FILE_DISPENSE and count == 2:
-                rospy.sleep(DISPENSE_TIME)
+            
         else:
             print 'invalid command {}'.format(pose_action.action)
 

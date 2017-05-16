@@ -43,7 +43,7 @@ namespace perception {
         seg.segment(indices_internal, coeff);
 
         double distance_above_plane;
-        ros::param::param("distance_above_plane", distance_above_plane, 0.005);
+        ros::param::param("distance_above_plane", distance_above_plane, 0.01);
 
         // Build custom indices that ignores points above the plane.
         for (size_t i = 0; i < cloud->size(); ++i) {
@@ -89,7 +89,7 @@ namespace perception {
         double cluster_tolerance;
         int min_cluster_size, max_cluster_size;
         ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
-        ros::param::param("ec_min_cluster_size", min_cluster_size, 300);
+        ros::param::param("ec_min_cluster_size", min_cluster_size, 1000);
         ros::param::param("ec_max_cluster_size", max_cluster_size, 100000);
 
 
@@ -100,11 +100,6 @@ namespace perception {
         euclid.setClusterTolerance(cluster_tolerance);
         euclid.setMinClusterSize(min_cluster_size);
         euclid.setMaxClusterSize(max_cluster_size);
-        // ROS_INFO("Found cloud %ld points", cloud->points.size());
-
-        // ROS_INFO("Found surface_indices %ld indicies", surface_indices->indices.size());
-        
-        // ROS_INFO("Found above_surface_indices %ld indicies", above_surface_indices->indices.size());
 
         euclid.extract(*object_indices);
         // Find the size of the smallest and the largest object,
@@ -191,8 +186,9 @@ namespace perception {
             object_marker.type = visualization_msgs::Marker::CUBE;
             GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
                                         &object_marker.scale);
-            object_marker.color.g = 1;
-            object_marker.color.a = 0.9;
+            object_marker.color.b = 1;
+            object_marker.color.g = 0.7;            
+            object_marker.color.a = 0.5;
             marker_pub_.publish(object_marker);
         }    
     }
