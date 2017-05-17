@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+  <title>Micheal</title>
+  <link rel="icon" href="assets/images/avatar.png" type="image/png">
+
+  <!-- CSS  -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="assets/css/micheal.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <!--<link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>-->
+</head>
+<body class="grey lighten-5">
+  <nav class="white lighten-1" role="navigation">
+    <div class="nav-wrapper container">
+      <img style="width: auto; height: 100%;" src="assets/images/logo.png"></img>
+    </div>
+  </nav>
+
+  
+<!--<div id="loader" class="valign-wrapper" style="height: 90vh">
+  <div class="row">
+    <div class="col s12 m6 offset-m3" style="text-align: center">
+       <div class="preloader-wrapper big active">
+        <div class="spinner-layer spinner-blue-only">
+          <div class="circle-clipper left">
+            <div class="circle"></div>
+          </div><div class="gap-patch">
+            <div class="circle"></div>
+          </div><div class="circle-clipper right">
+            <div class="circle"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <h4 id="loader-message" style="display: table-cell;">Connecting</h4>
+    </div>
+  </div>
+</div>-->
+  
+
+  <div class="section no-pad-bot" id="index-banner">
+    <div class="container">
+      <br><br>
+      <h1 class="header center blue-text">Drink Order</h1>
+      <br><br>
+    </div>
+  </div>
+
+
+  <div class="container">
+    <div class="row">
+      <div class="col s12 m6 l4">
+        <div class="card">
+          <div class="card-image waves-effect waves-block waves-light">
+            <img class="activator" src="assets/images/beer/guinness.png">
+          </div>
+          <div class="card-content">
+            <span class="card-title activator grey-text text-darken-4">Guinness<i class="material-icons right">more_vert</i></span>
+          </div>
+          <div class="card-reveal">
+            <span class="card-title grey-text text-darken-4">Card Title<i class="material-icons right">close</i></span>
+            <p>Here is some more information about this product that is only revealed once clicked on.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col s12 m6 l4">
+        <div class="card">
+          <div class="card-image waves-effect waves-block waves-light">
+            <img class="activator" src="assets/images/beer/guinness.png">
+          </div>
+          <div class="card-content">
+            <span class="card-title activator grey-text text-darken-4">Guinness<i class="material-icons right">more_vert</i></span>
+          </div>
+          <div class="card-reveal">
+            <span class="card-title grey-text text-darken-4">Card Title<i class="material-icons right">close</i></span>
+            <p>Here is some more information about this product that is only revealed once clicked on.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!--  Scripts-->
+  <script src="node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="node_modules/materialize-css/dist/js/materialize.min.js"></script>
+  <script>
+    $(document).ready(function(){
+      var app = new Micheal.Application();
+      app.init();
+    });
+  </script>
+  </body>
+</html>
