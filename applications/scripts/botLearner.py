@@ -17,7 +17,6 @@ PICKLE_FILE='pose_list_n.p'
 PICKLE_FILE_DISPENSER='dispenser.p'
 BAR_TABLE='bar_table'
 HOME='home'
-BAR='bar'
 
 pose_marker_server = None
 nav_server = None
@@ -151,8 +150,8 @@ def main():
             nav_server.saveMarker(HOME, new_pose_marker.pose)
         elif command == 'save_bar':
             new_pose_marker = PoseMarker(pose_marker_server, BAR_TABLE, None)
-            nav_server.saveMarker(BAR, new_pose_marker.pose)
-        elif command.startswith('save_pose'):
+            nav_server.saveMarker(BAR_TABLE, new_pose_marker.pose)
+        elif command.startswith('save_client'):
             commandList = lines.split(' ', 1)
             name = commandList[1].strip()
             new_pose_marker = PoseMarker(pose_marker_server, name, None)
