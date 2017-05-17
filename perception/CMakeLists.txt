@@ -10,8 +10,8 @@ project(perception)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   pcl_ros
-  rosbag       
-  roscpp    
+  rosbag
+  roscpp
   rospy
   sensor_msgs
   tf
@@ -109,7 +109,7 @@ catkin_python_setup()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES 
+  LIBRARIES
     perception_segmentation
     perception_downsampler
     perception_crop
@@ -142,13 +142,17 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/perception_node.cpp)
-add_executable(perception_save_cloud_main src/save_cloud_main.cpp)
-add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
+
+
+add_executable(perception_save_cloud_main src/save_cloud_main.cpp)
+add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
+
+
 set_target_properties(perception_save_cloud_main PROPERTIES OUTPUT_NAME save_cloud PREFIX "")
 set_target_properties(perception_point_cloud_demo PROPERTIES OUTPUT_NAME point_cloud_demo PREFIX "")
 

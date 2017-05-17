@@ -8,10 +8,16 @@ project(barbot)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  perception
-  message_generation
+    roscpp
+    pcl_ros
+    rosbag
+    roscpp
+    rospy
+    sensor_msgs
+    tf
+    rospy
+    perception
+    message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -21,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -57,7 +63,7 @@ add_message_files(
 add_service_files(
   FILES
   ArmToPose.srv
-  SetGripper.srv
+  MoveToPerception.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -68,10 +74,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
+generate_messages(
+   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
-# )
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -105,8 +111,8 @@ add_service_files(
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES barbot
-#    CATKIN_DEPENDS roscpp rospy
-#  DEPENDS system_lib
+#   CATKIN_DEPENDS roscpp rospy
+#   DEPENDS system_lib
 )
 
 ###########
@@ -116,10 +122,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-#include_directories(
-#  include
-#  ${catkin_INCLUDE_DIRS}
-#)
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -141,12 +147,26 @@ catkin_package(
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-set_target_properties(barbot_segment_objects_main PROPERTIES OUTPUT_NAME segment_objects PREFIX "")
 
-add_dependencies(barbot_segment_objects_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(barbot_segment_objects_main
+### SEGMENT LIBRARY
+
+add_library(barbot_segment_objects src/segment_objects.cpp)
+add_dependencies(barbot_segment_objects ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(barbot_segment_objects ${catkin_LIBRARIES})
+
+
+### EXECUTABLE
+
+add_executable(barbot_listener_node_main src/listener_node.cpp)
+set_target_properties(barbot_listener_node_main PROPERTIES OUTPUT_NAME listener_node PREFIX "")
+add_dependencies(barbot_listener_node_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(barbot_listener_node_main
+  barbot_segment_objects
   ${catkin_LIBRARIES}
 )
+
+
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
