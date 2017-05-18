@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     rospy
     perception
+    std_msgs
     message_generation
 )
 
@@ -62,7 +63,6 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  ArmToPose.srv
   MoveToPerception.srv
 )
 
@@ -111,7 +111,7 @@ generate_messages(
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES barbot
-#   CATKIN_DEPENDS roscpp rospy
+   CATKIN_DEPENDS roscpp rospy message_runtime
 #   DEPENDS system_lib
 )
 
