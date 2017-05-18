@@ -1,11 +1,13 @@
-#include "perception/crop.h"
-#include "perception/segmentation.h"
+
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "visualization_msgs/Marker.h"
 #include "barbot/MoveToPerception.h"
-typedef barbot::MoveToPerception MpServ;
+#include "pcl/point_cloud.h"
+#include "pcl/point_types.h"
 
+typedef barbot::MoveToPerception MpServ;
+typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace barbot {
 class SegmentObjects {
@@ -17,6 +19,6 @@ class SegmentObjects {
 
  private:
   ros::Publisher marker_pub_;
-  sensor_msgs::PointCloud2 camera_pointCloud_;
+  PointCloudC::Ptr camera_pointCloud_;
 };
 }  // namespace barbot

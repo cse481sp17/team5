@@ -58,6 +58,7 @@ catkin_python_setup()
 add_message_files(
   FILES
   UserAction.msg
+  DrinkJobComplete.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -1,6 +1,7 @@
-#include "perception/crop.h"
 #include "perception/segmentation.h"
 #include "ros/ros.h"
+#include "barbot/segment_objects.h"
+#include <string>
 
 #include "sensor_msgs/PointCloud2.h"
 #include "visualization_msgs/Marker.h"
@@ -26,12 +27,12 @@ typedef barbot::MoveToPerception MpServ;
 
 namespace barbot {
     SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
-        : marker_pub_(marker_pub){}
-    bool ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
-        ROS_INFO("Service call received of type: %s", req.perception);
-        PointCloudC::Ptr cloudIn(new PointCloudC());
-        cloudIn->is_dense = false;
-        pcl::fromROSMsg(msg, *cloudIn);
+        : marker_pub_(marker_pub), camera_pointCloud_(new PointCloudC()){}
+    bool SegmentObjects::ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
+        ROS_INFO("Service call received of type %s", req.perception.c_str());
+        // PointCloudC::Ptr cloudIn(new PointCloudC());
+        // cloudIn->is_dense = false;
+        // pcl::fromROSMsg(camera_pointCloud_, *cloudIn);
         PointCloudC::Ptr cropped_cloud(new PointCloudC());
         double min_x, min_y, min_z, max_x, max_y, max_z;
         ros::param::param("crop_min_x", min_x, 0.3);
@@ -43,7 +44,7 @@ namespace barbot {
         Eigen::Vector4f min_pt(min_x, min_y, min_z, 1);
         Eigen::Vector4f max_pt(max_x, max_y, max_z, 1);
         pcl::CropBox<PointC> crop;
-        crop.setInputCloud(cloudIn);
+        crop.setInputCloud(camera_pointCloud_);
         crop.setMin(min_pt);
         crop.setMax(max_pt);
         crop.filter(*cropped_cloud);
@@ -53,7 +54,7 @@ namespace barbot {
         pcl::removeNaNFromPointCloud(*cropped_cloud, *cloud, indices);
 
         pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-        SegmentSurface(cloud, table_inliers);
+        perception::SegmentSurface(cloud, table_inliers);
         PointCloudC::Ptr segmented_cloud(new PointCloudC);
 
         // // Extract subset of original_cloud into segmented_cloud:
@@ -67,14 +68,14 @@ namespace barbot {
         table_marker.ns = "table";
         table_marker.header.frame_id = "base_link";
         table_marker.type = visualization_msgs::Marker::CUBE;
-        perception::segmentation::GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
+        perception::GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
         table_marker.color.r = 1;
         table_marker.color.a = 0.8;
         marker_pub_.publish(table_marker);
 
         std::vector<pcl::PointIndices> object_indices;
         std::vector<visualization_msgs::Marker> marker_vector;
-        perception::segmentation::SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
+        perception::SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
 
         for (size_t i = 0; i < object_indices.size(); ++i) {
         // Reify indices into a point cloud of the object.
@@ -93,7 +94,7 @@ namespace barbot {
             object_marker.id = i;
             object_marker.header.frame_id = "base_link";
             object_marker.type = visualization_msgs::Marker::CUBE;
-            perception::segmentation::GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
+            perception::GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
                                         &object_marker.scale);
             object_marker.color.b = 1;
             object_marker.color.g = 0.7;
@@ -101,9 +102,14 @@ namespace barbot {
             marker_vector.push_back(object_marker);
             marker_pub_.publish(object_marker);
         }
-
+        res.x = 9;
+        res.y = 9;
+        res.z = 1;
+        res.item = req.perception;
+        ROS_INFO("sending back response: %s", res.item.c_str());
+        return true;
     }
     void SegmentObjects::HeadCamCallback(const sensor_msgs::PointCloud2& msg) {
-        camera_pointCloud_ = *msg;
+        pcl::fromROSMsg(msg, *camera_pointCloud_);
     }
 }  // namespace barbot
