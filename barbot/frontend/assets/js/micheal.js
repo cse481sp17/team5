@@ -15,6 +15,11 @@
             var p = $.Deferred();
             this.fadeIn(speed, function() {p.resolve();});
             return p.promise();
+        },
+        deferredAnimate: function(property, speed) {
+            var p = $.Deferred();
+            this.animate(property, speed, () => p.resolve());
+            return p.promise();
         }
     });
 
@@ -84,11 +89,8 @@
     Loader.prototype.setText = function(text) {
         var self = this;
         var $text = self._$text;
-        var p = $.Deferred();
-        $text.deferredFadeOut(this.fadeSpeed)
-        .then(() => {$text.text(text); return $text.deferredFadeIn(self.fadeSpeed)})
-        .then(() => p.resolve());
-        return p.promise();
+        return $text.deferredAnimate({'opacity' : 0}, self.fadeSpeed)
+        .then(() => {$text.text(text); return $text.deferredAnimate({'opacity': 1}, self.fadeSpeed * 2); });
     };
 
     // Export to namespace.
