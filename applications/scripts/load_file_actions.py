@@ -12,7 +12,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 import tf.transformations as tft
 
-DISPENSE_TIME = 5.0
+DISPENSE_TIME = 3.0
 PICKLE_FILE_DISPENSE='dispenser.p'
 
 class ArTagReader(object):
