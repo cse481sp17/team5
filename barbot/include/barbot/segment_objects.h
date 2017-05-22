@@ -15,6 +15,7 @@ class SegmentObjects {
   SegmentObjects(const ros::Publisher& marker_pub);
   bool ServiceCallback(MpServ::Request  &req,
       MpServ::Response &res);
+  double SegmentObjects::calc_minkowski_distance(geometry_msgs::Position start, geometry_msgs::Position cup);
   void HeadCamCallback(const sensor_msgs::PointCloud2& msg);
 
  private:
