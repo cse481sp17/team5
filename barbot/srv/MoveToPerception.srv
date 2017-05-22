@@ -1,3 +1,7 @@
+# request constants
+string CUP='cup'
+string TABLE='table'
+#request fields
 string perception
 ---
 float64 x
