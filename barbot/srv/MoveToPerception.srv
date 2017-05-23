@@ -1,6 +1,6 @@
 # request constants
-string CUP='cup'
-string TABLE='table'
+string CUP=cup
+string TABLE=table
 #request fields
 string perception
 ---

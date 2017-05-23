@@ -3,12 +3,15 @@
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "visualization_msgs/Marker.h"
-
+#include "geometry_msgs/Pose.h"
+#include "simple_grasping/shape_extraction.h"
+#include "shape_msgs/SolidPrimitive.h"
 #include "pcl/PointIndices.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl/common/angles.h"
+#include "pcl/ModelCoefficients.h"
 #include "pcl/sample_consensus/method_types.h"
 #include "pcl/sample_consensus/model_types.h"
 #include "pcl/segmentation/sac_segmentation.h"
@@ -21,7 +24,7 @@ typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception {
-    void SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices) {
+    void SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, pcl::ModelCoefficients::Ptr coeff) {
         pcl::PointIndices indices_internal;
         pcl::SACSegmentation<PointC> seg;
         seg.setOptimizeCoefficients(true);
@@ -39,8 +42,7 @@ namespace perception {
 
         // coeff contains the coefficients of the plane:
         // ax + by + cz + d = 0
-        pcl::ModelCoefficients coeff;
-        seg.segment(indices_internal, coeff);
+        seg.segment(indices_internal, *coeff);
 
         double distance_above_plane;
         ros::param::param("distance_above_plane", distance_above_plane, 0.01);
@@ -48,8 +50,8 @@ namespace perception {
         // Build custom indices that ignores points above the plane.
         for (size_t i = 0; i < cloud->size(); ++i) {
             const PointC& pt = cloud->points[i];
-            float val = coeff.values[0] * pt.x + coeff.values[1] * pt.y +
-                        coeff.values[2] * pt.z + coeff.values[3];
+            float val = coeff->values[0] * pt.x + coeff->values[1] * pt.y +
+                        coeff->values[2] * pt.z + coeff->values[3];
             if (val <= distance_above_plane) {
                 indices->indices.push_back(i);
             }
@@ -90,7 +92,7 @@ namespace perception {
         int min_cluster_size, max_cluster_size;
         ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
         ros::param::param("ec_min_cluster_size", min_cluster_size, 1000);
-        ros::param::param("ec_max_cluster_size", max_cluster_size, 100000);
+        ros::param::param("ec_max_cluster_size", max_cluster_size, 5000);
 
 
         // Extracts clustered objects
@@ -135,7 +137,8 @@ namespace perception {
 
         ROS_INFO("CLOUD REC");
         pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-        SegmentSurface(cloud, table_inliers);
+        pcl::ModelCoefficients::Ptr coeff;
+        SegmentSurface(cloud, table_inliers, coeff);
         PointCloudC::Ptr segmented_cloud(new PointCloudC);
 
         // // Extract subset of original_cloud into segmented_cloud:
@@ -149,7 +152,18 @@ namespace perception {
         table_marker.ns = "table";
         table_marker.header.frame_id = "base_link";
         table_marker.type = visualization_msgs::Marker::CUBE;
-        GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
+        //GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
+        shape_msgs::SolidPrimitive table_shape;
+        PointCloudC::Ptr extract_out_table(new PointCloudC());
+        geometry_msgs::Pose table_pose;
+        simple_grasping::extractShape(*segmented_cloud, coeff, *extract_out_table, table_shape, table_pose);
+        table_marker.pose = table_pose;
+        if (table_shape.type == shape_msgs::SolidPrimitive::BOX) {
+            table_marker.scale.x = table_shape.dimensions[0];
+            table_marker.scale.y = table_shape.dimensions[1];
+            table_marker.scale.z = table_shape.dimensions[2];
+        }
+        table_marker.pose.position.z -= table_marker.scale.z;
         table_marker.color.r = 1;
         table_marker.color.a = 0.8;
         marker_pub_.publish(table_marker);

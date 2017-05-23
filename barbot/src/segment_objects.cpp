@@ -31,7 +31,7 @@ namespace barbot {
     SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
         : marker_pub_(marker_pub), camera_pointCloud_(new PointCloudC()){}
 
-    double SegmentObjects::calc_minkowski_distance(geometry_msgs::Position start, geometry_msgs::Position end) {
+    double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
         double aggreg = 0.0;
         aggreg += pow(abs(start.x-end.x), 2);
         aggreg += pow(abs(start.y-end.y), 2);
@@ -62,7 +62,8 @@ namespace barbot {
         pcl::removeNaNFromPointCloud(*cropped_cloud, *cloud, indices);
 
         pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-        perception::SegmentSurface(cloud, table_inliers);
+        pcl::ModelCoefficients::Ptr coeff;
+        perception::SegmentSurface(cloud, table_inliers, coeff);
         PointCloudC::Ptr segmented_cloud(new PointCloudC);
 
         // // Extract subset of original_cloud into segmented_cloud:
@@ -70,9 +71,9 @@ namespace barbot {
         extract.setInputCloud(cloud);
         extract.setIndices(table_inliers);
         extract.filter(*segmented_cloud);
-        geometry_msgs::Position finalPosition;
+        geometry_msgs::Point finalPosition;
         // // SEND MARKER FOR TABLE
-        if(req.perception.c_str() == req.TABLE.c_str()) {
+        if(req.perception == req.TABLE) {
             visualization_msgs::Marker table_marker;
             table_marker.ns = "table";
             table_marker.header.frame_id = "base_link";
@@ -81,15 +82,13 @@ namespace barbot {
             table_marker.color.r = 1;
             table_marker.color.a = 0.8;
             marker_pub_.publish(table_marker);
-            ROS_INFO('Generated marker for table');
-            finalPosition.x = table.pose.position.x;
-            finalPosition.y = table.pose.position.y;
-            finalPosition.z = table.pose.position.z;
-        } else if (req.perception.c_str() == req.CUP.c_str()) {
+            finalPosition.x = table_marker.pose.position.x;
+            finalPosition.y = table_marker.pose.position.y;
+            finalPosition.z = table_marker.pose.position.z;
+        } else if (req.perception == req.CUP) {
             std::vector<pcl::PointIndices> object_indices;
             std::vector<visualization_msgs::Marker> marker_vector;
             perception::SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
-            ROS_INFO('Generated marker for cups');
             for (size_t i = 0; i < object_indices.size(); ++i) {
             // Reify indices into a point cloud of the object.
                 pcl::PointIndices::Ptr indice(new pcl::PointIndices);
@@ -109,17 +108,17 @@ namespace barbot {
                 object_marker.type = visualization_msgs::Marker::CUBE;
                 perception::GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
                                             &object_marker.scale);
-                object_marker.color.b = 1;
+                object_marker.color.b = 0;
                 object_marker.color.g = 0.7;
-                object_marker.color.a = 0.5;
+                object_marker.color.a = 0.5 ;
                 marker_vector.push_back(object_marker);
                 marker_pub_.publish(object_marker);
                 finalPosition.x = object_marker.pose.position.x;
                 finalPosition.y = object_marker.pose.position.y;
                 finalPosition.z = object_marker.pose.position.z;
+                ROS_INFO("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
             }
         }
-
         res.x = finalPosition.x;
         res.y = finalPosition.y;
         res.z = finalPosition.z;
