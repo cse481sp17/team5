@@ -19,8 +19,7 @@ from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControlle
 PICKLE_FILE='pose_list_n.p'
 BAR_TABLE='bar_table'
 HOME='home'
-WORKING=False
-#current_amcl = None
+WORKING=None
 
 nav_server = None
 arm_server = None
@@ -43,8 +42,9 @@ def wait_for_time():
 
 
 def handle_user_actions(message):
-    if message.command == 'make_drink':
-        WORKING = True
+    # add drink type and id 
+    if message.command == 'make_drink' and WORKING == None:
+        WORKING = message.id
         # navigate to the bar table
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
@@ -53,27 +53,40 @@ def handle_user_actions(message):
         try:
             response = perception_service('cup')
             arm_server.findGlass(response)
-
         except rospy.ServiceException, e:
             print 'Service call failed getting cup'
             nav_server.goToMarker(HOME)
-            continue
+            callservice('failed', message.id)
+            WORKING = None
+            return
 
         nav_server.goToMarker(HOME)
 
-        try:
-            response = perception_service('table')
-            arm_server.findGlass(response)
-        except rospy.ServiceException, e:
-            print 'Service call failed getting table'
-            continue
-
-        WORKING = False
-
+        count = 0
+        while count < 10:
+            try:
+                response = perception_service('table')
+                arm_server.findGlass(response)
+                break
+            except rospy.ServiceException, e:
+                count += 1
+        if count == 10:
+            callservice('failed to drop', message.id)
+            WORKING = None
+            return
+        # send back id and "done"
+        callservice('done', message.id)
+        WORKING = None
     else:
+        # send back "still working"
+        callservice('still working', message.id)
         print 'unknown command'
         pass
 
+def callservice(command, drink_id):
+    rospy.wait_for_service('barbot/drink_done')
+    action_done = rospy.ServiceProxy('barbot/drink_done', NameOfService)
+    action_done(command, drink_id)
 
 
 
@@ -116,14 +129,7 @@ def main():
 
 
     # handle user actions
-    user_actions_sub = rospy.Subscriber('/user_actions', UserAction, arm_server.handle_user_actions)   
-
-    #user_actions_sub = rospy.Service('/user_actions', UserAction, handle_user_actions)   
-
-
-    action_done_service = rospy.Service('barbot/action_done', ActionDone, action_callback)
-    
-
+    user_actions_sub = rospy.Service('/user_actions', UserAction, handle_user_actions)
     rospy.spin()
 
 if __name__ == '__main__':
