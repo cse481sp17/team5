@@ -118,7 +118,7 @@
      * @param url The url of the Fetch Robot.
      */
     Application.prototype.init = function(url) {
-        this._url = url ? url : 'wss://robonaut.cs.washington.edu:9090';
+        this._url = url ? url : 'ws://robonaut.cs.washington.edu:9090';
         var self = this;
         this._connect(this._url)
         .then(
@@ -142,7 +142,10 @@
         this._$order.deferredFadeOut()
         .then(() => {self._loader._$text.text('Creating Drink.'); return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
-        .then(() => self._loader.setText('Drink Complete.'));
+        .then(
+            () => self._loader.setText('Drink Complete.'),
+            () => self._loader.setText('Drink Failed.'))
+        .then(() => self._loader.hide());
     };
 
     /**
@@ -158,7 +161,7 @@
             self._drinkPublisher = new ROSLIB.Topic({
                 ros: ros,
                 name: '/drink_job',
-                messageType: 'barbot/DrinkJob'
+                messageType: 'barbot/UserAction'
              });
              self._drinkSubscriber = new ROSLIB.Topic({
                 ros: ros,
@@ -172,8 +175,13 @@
                     //  we should see if we were the ones to order it.
                     // If so, then we need to resolve our promise.
                     if(self._deferredOrders[message.id] !== undefined) {
-                        self._deferredOrders[message.id].resolve();
+                        var order = self._deferredOrders[message.id];
                         delete self._deferredOrders[message.id];
+                        if(message.status == 'complete') {
+                            order.resolve();
+                        } else {
+                            order.reject();
+                        }    
                     }
                 });
             p.resolve();
@@ -197,8 +205,9 @@
         var p = $.Deferred();
         var guid = generateGuid();
         var message = new ROSLIB.Message();
+        message.command='make_drink';
         message.type = type;
-        message.ammount = ammount;
+        //message.ammount = ammount;
         message.id = guid;
 
         this._deferredOrders[guid] = p;
