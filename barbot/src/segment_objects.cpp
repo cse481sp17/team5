@@ -1,7 +1,9 @@
 #include "perception/segmentation.h"
+#include "perception/object.h"
 #include "ros/ros.h"
 #include "barbot/segment_objects.h"
-
+#include "perception/box_fitter.h"
+#include "shape_msgs/SolidPrimitive.h"
 #include <string>
 #include <math.h>
 #include <std_msgs/Float64.h>
@@ -31,12 +33,19 @@ namespace barbot {
     SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
         : marker_pub_(marker_pub), camera_pointCloud_(new PointCloudC()){}
 
-    double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
-        double aggreg = 0.0;
-        aggreg += pow(abs(start.x-end.x), 2);
-        aggreg += pow(abs(start.y-end.y), 2);
-        aggreg += pow(abs(start.z-end.z), 2);
-        return pow(aggreg, 1.0/2.0);
+    // double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
+    //     double aggreg = 0.0;
+    //     aggreg += pow(abs(start.x-end.x), 2);
+    //     aggreg += pow(abs(start.y-end.y), 2);
+    //     aggreg += pow(abs(start.z-end.z), 2);
+    //     return pow(aggreg, 1.0/2.0);
+    // }
+
+    bool SegmentObjects::checkIfCup(geometry_msgs::Vector3 scale) {
+        bool x = scale.x > 0.095 && scale.x < 0.12;
+        bool y = scale.y > 0.09 && scale.y < 0.12;
+        bool z = scale.z > 0.12 && scale.y < 0.13;
+        return x && y && z;
     }
 
     bool SegmentObjects::ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
@@ -61,24 +70,32 @@ namespace barbot {
         PointCloudC::Ptr cloud(new PointCloudC());
         pcl::removeNaNFromPointCloud(*cropped_cloud, *cloud, indices);
 
-        pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-        pcl::ModelCoefficients::Ptr coeff;
-        perception::SegmentSurface(cloud, table_inliers, coeff);
-        PointCloudC::Ptr segmented_cloud(new PointCloudC);
-
-        // // Extract subset of original_cloud into segmented_cloud:
-        pcl::ExtractIndices<PointC> extract;
-        extract.setInputCloud(cloud);
-        extract.setIndices(table_inliers);
-        extract.filter(*segmented_cloud);
         geometry_msgs::Point finalPosition;
         // // SEND MARKER FOR TABLE
         if(req.perception == req.TABLE) {
+            pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
+            pcl::ModelCoefficients::Ptr coeff(new pcl::ModelCoefficients());
+            perception::SegmentSurface(cloud, table_inliers, coeff);
+            PointCloudC::Ptr segmented_cloud(new PointCloudC);
+            pcl::ExtractIndices<PointC> extract;
+            extract.setInputCloud(cloud);
+            extract.setIndices(table_inliers);
+            extract.filter(*segmented_cloud);
             visualization_msgs::Marker table_marker;
             table_marker.ns = "table";
             table_marker.header.frame_id = "base_link";
             table_marker.type = visualization_msgs::Marker::CUBE;
-            perception::GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
+            shape_msgs::SolidPrimitive table_shape;
+            PointCloudC::Ptr extract_out_table(new PointCloudC());
+            geometry_msgs::Pose table_pose;
+            perception::FitBox(*segmented_cloud, coeff, *extract_out_table, table_shape, table_pose);
+            table_marker.pose = table_pose;
+            if (table_shape.type == shape_msgs::SolidPrimitive::BOX) {
+                table_marker.scale.x = table_shape.dimensions[0];
+                table_marker.scale.y = table_shape.dimensions[1];
+                table_marker.scale.z = table_shape.dimensions[2];
+            }
+            table_marker.pose.position.z -= table_marker.scale.z;
             table_marker.color.r = 1;
             table_marker.color.a = 0.8;
             marker_pub_.publish(table_marker);
@@ -86,38 +103,30 @@ namespace barbot {
             finalPosition.y = table_marker.pose.position.y;
             finalPosition.z = table_marker.pose.position.z;
         } else if (req.perception == req.CUP) {
-            std::vector<pcl::PointIndices> object_indices;
-            std::vector<visualization_msgs::Marker> marker_vector;
-            perception::SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
-            for (size_t i = 0; i < object_indices.size(); ++i) {
-            // Reify indices into a point cloud of the object.
-                pcl::PointIndices::Ptr indice(new pcl::PointIndices);
-                *indice = object_indices[i];
-                PointCloudC::Ptr object_cloud(new PointCloudC());
+            std::vector<perception::Object> objects;
+            perception::SegmentTabletopScene(cloud, &objects);
 
-                pcl::ExtractIndices<PointC> extract3;
-                extract3.setInputCloud(cloud);
-                extract3.setIndices(indice);
-                extract3.setNegative(false);
-                extract3.filter(*object_cloud);
-                // Publish a bounding box around it.
-                visualization_msgs::Marker object_marker;
-                object_marker.ns = "objects";
-                object_marker.id = i;
-                object_marker.header.frame_id = "base_link";
-                object_marker.type = visualization_msgs::Marker::CUBE;
-                perception::GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
-                                            &object_marker.scale);
-                object_marker.color.b = 0;
-                object_marker.color.g = 0.7;
-                object_marker.color.a = 0.5 ;
-                marker_vector.push_back(object_marker);
-                marker_pub_.publish(object_marker);
-                finalPosition.x = object_marker.pose.position.x;
-                finalPosition.y = object_marker.pose.position.y;
-                finalPosition.z = object_marker.pose.position.z;
-                ROS_INFO("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
+            for (size_t i = 0; i < objects.size(); ++i) {
+                const perception::Object& object = objects[i];
+                if(checkIfCup(object.dimensions)) {
+                    visualization_msgs::Marker object_marker;
+                    object_marker.ns = "objects";
+                    object_marker.id = i;
+                    object_marker.header.frame_id = "base_link";
+                    object_marker.type = visualization_msgs::Marker::CUBE;
+                    object_marker.pose = object.pose;
+                    object_marker.scale = object.dimensions;
+                    object_marker.color.b = 1;
+                    object_marker.color.a = 0.7;
+                    marker_pub_.publish(object_marker);
+                    finalPosition.x = object_marker.pose.position.x;
+                    finalPosition.y = object_marker.pose.position.y;
+                    finalPosition.z = object_marker.pose.position.z;
+                    ROS_DEBUG("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
+                    ROS_DEBUG("Object Scale %ld, x =  %f, y =  %f, z =  %f", i, object_marker.scale.x, object_marker.scale.y, object_marker.scale.z);
+                }
             }
+            
         }
         res.x = finalPosition.x;
         res.y = finalPosition.y;

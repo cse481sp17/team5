@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     perception
     std_msgs
+    simple_grasping
     message_generation
 )
 

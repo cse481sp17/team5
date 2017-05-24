@@ -1,13 +1,16 @@
 #include "perception/segmentation.h"
+#include "perception/box_fitter.h"
+#include "shape_msgs/SolidPrimitive.h"
 
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "visualization_msgs/Marker.h"
 #include "geometry_msgs/Pose.h"
 #include "simple_grasping/shape_extraction.h"
-#include "shape_msgs/SolidPrimitive.h"
 #include "pcl/PointIndices.h"
 #include "pcl/point_cloud.h"
+#include "perception/object.h"
+
 #include "pcl/point_types.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl/common/angles.h"
@@ -63,7 +66,7 @@ namespace perception {
             ROS_ERROR("Unable to find surface.");
             return;
         }
-        ROS_INFO("Segmented Cloud");
+        ROS_DEBUG("Segmented Cloud");
     }
 
     void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, geometry_msgs::Pose* pose, geometry_msgs::Vector3* dimensions) {
@@ -118,92 +121,89 @@ namespace perception {
                 min_size = curClusterSize;
             }
         }
-        ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
+        ROS_DEBUG("Found %ld objects, min size: %ld, max size: %ld",
                 object_indices->size(), min_size, max_size);
+    }
+
+    void SegmentTabletopScene(PointCloudC::Ptr cloud, std::vector<Object>* objects) {
+        pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
+        pcl::ModelCoefficients::Ptr coeff(new pcl::ModelCoefficients());
+        SegmentSurface(cloud, table_inliers, coeff);
+        PointCloudC::Ptr segmented_cloud(new PointCloudC);
+        
+        std::vector<pcl::PointIndices> object_indices;
+
+        SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
+
+        for (size_t i = 0; i < object_indices.size(); ++i) {
+            pcl::PointIndices::Ptr indice(new pcl::PointIndices);
+            *indice = object_indices[i];
+            PointCloudC::Ptr object_cloud(new PointCloudC());
+            
+            pcl::ExtractIndices<PointC> extract3;
+            extract3.setInputCloud(cloud);
+            extract3.setIndices(indice);
+            extract3.setNegative(false);
+            extract3.filter(*object_cloud);
+            shape_msgs::SolidPrimitive cup_shape;
+            PointCloudC::Ptr extract_out_object(new PointCloudC());
+            geometry_msgs::Pose cup_pose;
+            perception::FitBox(*object_cloud, coeff, *extract_out_object, cup_shape, cup_pose);
+            Object marker;
+            
+            marker.pose = cup_pose;
+            marker.dimensions.x = cup_shape.dimensions[0];
+            marker.dimensions.y = cup_shape.dimensions[1];
+            marker.dimensions.z = cup_shape.dimensions[2];
+            objects->push_back(marker);
+        }
     }
 
     Segmenter::Segmenter(const ros::Publisher& surface_points_pub, const ros::Publisher& marker_pub)
         : surface_points_pub_(surface_points_pub), marker_pub_(marker_pub){}
 
     void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
-        PointCloudC::Ptr cloud2(new PointCloudC());
-        cloud2->is_dense = false;
-        pcl::fromROSMsg(msg, *cloud2);
+        PointCloudC::Ptr cloud_in(new PointCloudC());
+        cloud_in->is_dense = false;
+        pcl::fromROSMsg(msg, *cloud_in);
 
         std::vector<int> indices;
         PointCloudC::Ptr cloud(new PointCloudC());
-        pcl::removeNaNFromPointCloud(*cloud2, *cloud, indices);
-        
+        pcl::removeNaNFromPointCloud(*cloud_in, *cloud, indices);
+            // shape_msgs::SolidPrimitive table_shape;
+        // PointCloudC::Ptr extract_out_table(new PointCloudC());
+        // geometry_msgs::Pose table_pose;
+        // perception::FitBox(*segmented_cloud, coeff, *extract_out_table, table_shape, table_pose);
+        // table_marker.pose = table_pose;
+        // if (table_shape.type == shape_msgs::SolidPrimitive::BOX) {
+        //     table_marker.scale.x = table_shape.dimensions[0];
+        //     table_marker.scale.y = table_shape.dimensions[1];
+        //     table_marker.scale.z = table_shape.dimensions[2];
+        // }
+        // table_marker.pose.position.z -= table_marker.scale.z;
+        // table_marker.color.r = 1;
+        // table_marker.color.a = 0.8;
+        // marker_pub_.publish(table_marker);
 
-        ROS_INFO("CLOUD REC");
-        pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-        pcl::ModelCoefficients::Ptr coeff;
-        SegmentSurface(cloud, table_inliers, coeff);
-        PointCloudC::Ptr segmented_cloud(new PointCloudC);
+        ROS_DEBUG("CLOUD RECIEVED");
 
-        // // Extract subset of original_cloud into segmented_cloud:
-        pcl::ExtractIndices<PointC> extract;
-        extract.setInputCloud(cloud);
-        extract.setIndices(table_inliers);
-        extract.filter(*segmented_cloud);
+        std::vector<Object> objects;
+        SegmentTabletopScene(cloud, &objects);
 
-        // // SEND MARKER FOR TABLE
-        visualization_msgs::Marker table_marker;
-        table_marker.ns = "table";
-        table_marker.header.frame_id = "base_link";
-        table_marker.type = visualization_msgs::Marker::CUBE;
-        //GetAxisAlignedBoundingBox(segmented_cloud, &table_marker.pose, &table_marker.scale);
-        shape_msgs::SolidPrimitive table_shape;
-        PointCloudC::Ptr extract_out_table(new PointCloudC());
-        geometry_msgs::Pose table_pose;
-        simple_grasping::extractShape(*segmented_cloud, coeff, *extract_out_table, table_shape, table_pose);
-        table_marker.pose = table_pose;
-        if (table_shape.type == shape_msgs::SolidPrimitive::BOX) {
-            table_marker.scale.x = table_shape.dimensions[0];
-            table_marker.scale.y = table_shape.dimensions[1];
-            table_marker.scale.z = table_shape.dimensions[2];
-        }
-        table_marker.pose.position.z -= table_marker.scale.z;
-        table_marker.color.r = 1;
-        table_marker.color.a = 0.8;
-        marker_pub_.publish(table_marker);
+         for (size_t i = 0; i < objects.size(); ++i) {
+            const Object& object = objects[i];
 
-        // Publish Table Top Items
-        extract.setNegative(true);
-        extract.filter(*segmented_cloud);
-        sensor_msgs::PointCloud2 msg_out;
-        pcl::toROSMsg(*segmented_cloud, msg_out);
-        surface_points_pub_.publish(msg_out);
-        
-        // // SEGMENT TOP OBJECTS
-        std::vector<pcl::PointIndices> object_indices;
-
-        SegmentSurfaceObjects(cloud, table_inliers, &object_indices);
-
-        for (size_t i = 0; i < object_indices.size(); ++i) {
-        //     // Reify indices into a point cloud of the object.
-            pcl::PointIndices::Ptr indice(new pcl::PointIndices);
-            *indice = object_indices[i];
-            PointCloudC::Ptr object_cloud(new PointCloudC());
-            
-            // TODO: fill in object_cloud using indices
-            pcl::ExtractIndices<PointC> extract3;
-            extract3.setInputCloud(cloud);
-            extract3.setIndices(indice);
-            extract3.setNegative(false);
-            extract3.filter(*object_cloud);
             // Publish a bounding box around it.
             visualization_msgs::Marker object_marker;
             object_marker.ns = "objects";
             object_marker.id = i;
             object_marker.header.frame_id = "base_link";
             object_marker.type = visualization_msgs::Marker::CUBE;
-            GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
-                                        &object_marker.scale);
-            object_marker.color.b = 1;
-            object_marker.color.g = 0.7;            
-            object_marker.color.a = 0.5;
+            object_marker.pose = object.pose;
+            object_marker.scale = object.dimensions;
+            object_marker.color.g = 1;
+            object_marker.color.a = 0.3;
             marker_pub_.publish(object_marker);
-        }    
+        }
     }
 }  // namespace perception
