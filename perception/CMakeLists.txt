@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   tf
+  simple_grasping
   rospy
 )
 
@@ -113,6 +114,7 @@ catkin_package(
     perception_segmentation
     perception_downsampler
     perception_crop
+    perception_box_fitter
  # CATKIN_DEPENDS roscpp rospy
 )
 
@@ -152,6 +154,9 @@ include_directories(
 add_executable(perception_save_cloud_main src/save_cloud_main.cpp)
 add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
 
+add_library(perception_box_fitter src/box_fitter.cpp)
+add_dependencies(perception_box_fitter ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_box_fitter ${catkin_LIBRARIES})
 
 set_target_properties(perception_save_cloud_main PROPERTIES OUTPUT_NAME save_cloud PREFIX "")
 set_target_properties(perception_point_cloud_demo PROPERTIES OUTPUT_NAME point_cloud_demo PREFIX "")
@@ -166,7 +171,7 @@ target_link_libraries(perception_downsampler ${catkin_LIBRARIES})
 
 add_library(perception_segmentation src/segmentation.cpp)
 add_dependencies(perception_segmentation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(perception_segmentation ${catkin_LIBRARIES})
+target_link_libraries(perception_segmentation perception_box_fitter ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -182,6 +187,7 @@ target_link_libraries(perception_point_cloud_demo
   perception_crop
   perception_segmentation
   perception_downsampler
+  perception_box_fitter
   ${catkin_LIBRARIES}
 )
 #############

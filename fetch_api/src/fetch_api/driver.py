@@ -89,7 +89,7 @@ class Driver(object):
                 else:
                     # print 'Done Turning'
                     speed = 0.4       
-                    self._base.stop
+                    self._base.stop()
                     time.sleep(0.5)    
                     state = 'move'
 

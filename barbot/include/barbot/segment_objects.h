@@ -15,9 +15,9 @@ class SegmentObjects {
   SegmentObjects(const ros::Publisher& marker_pub);
   bool ServiceCallback(MpServ::Request  &req,
       MpServ::Response &res);
-  double SegmentObjects::calc_minkowski_distance(geometry_msgs::Position start, geometry_msgs::Position cup);
+//   double calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end);
   void HeadCamCallback(const sensor_msgs::PointCloud2& msg);
-
+  bool checkIfCup(geometry_msgs::Vector3 scale);
  private:
   ros::Publisher marker_pub_;
   PointCloudC::Ptr camera_pointCloud_;
