@@ -23,6 +23,8 @@
 #include "pcl/filters/extract_indices.h"
 #include "pcl/common/common.h"
 #include "pcl/segmentation/extract_clusters.h"
+#include "pcl_ros/transforms.h"
+#include "tf/transform_listener.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
@@ -31,7 +33,7 @@ typedef barbot::MoveToPerception MpServ;
 
 namespace barbot {
     SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
-        : marker_pub_(marker_pub), camera_pointCloud_(new PointCloudC()){}
+        : marker_pub_(marker_pub) {}
 
     // double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
     //     double aggreg = 0.0;
@@ -42,14 +44,38 @@ namespace barbot {
     // }
 
     bool SegmentObjects::checkIfCup(geometry_msgs::Vector3 scale) {
-        bool x = scale.x > 0.095 && scale.x < 0.12;
-        bool y = scale.y > 0.09 && scale.y < 0.12;
-        bool z = scale.z > 0.12 && scale.y < 0.13;
+        double min_x, min_y, min_z, max_x, max_y, max_z;
+        ros::param::param("scale_min_x", min_x, 0.095);
+        ros::param::param("scale_min_y", min_y, 0.09);
+        ros::param::param("scale_min_z", min_z, 0.12);
+        ros::param::param("scale_max_x", max_x, 0.12);
+        ros::param::param("scale_max_y", max_y, 0.12);
+        ros::param::param("scale_max_z", max_z, 0.13);
+        bool x = scale.x > min_x && scale.x < max_x;
+        bool y = scale.y > min_y && scale.y < max_y;
+        bool z = scale.z > min_z && scale.y < max_z;
         return x && y && z;
     }
 
     bool SegmentObjects::ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
         ROS_INFO("Service call received of type %s", req.perception.c_str());
+        tf::TransformListener tf_listener;
+        tf_listener.waitForTransform("base_link", camera_pointCloud_.header.frame_id,                     
+                                ros::Time(0), ros::Duration(5.0));                       
+        tf::StampedTransform transform;                                                       
+        try {                                                                                 
+            tf_listener.lookupTransform("base_link", camera_pointCloud_.header.frame_id, ros::Time(0), transform);                               
+        } catch (tf::LookupException& e) {                                                    
+            std::cerr << e.what() << std::endl;                                                 
+            return 1;                                                                           
+        } catch (tf::ExtrapolationException& e) {                                             
+            std::cerr << e.what() << std::endl;                                                 
+            return 1;                                                                           
+        }
+        sensor_msgs::PointCloud2 cloud_out;                                                   
+        pcl_ros::transformPointCloud("base_link", transform, camera_pointCloud_, cloud_out);
+        PointCloudC::Ptr base_link_cloud(new PointCloudC());
+        pcl::fromROSMsg(cloud_out, *base_link_cloud);
         PointCloudC::Ptr cropped_cloud(new PointCloudC());
         double min_x, min_y, min_z, max_x, max_y, max_z;
         ros::param::param("crop_min_x", min_x, 0.3);
@@ -61,7 +87,7 @@ namespace barbot {
         Eigen::Vector4f min_pt(min_x, min_y, min_z, 1);
         Eigen::Vector4f max_pt(max_x, max_y, max_z, 1);
         pcl::CropBox<PointC> crop;
-        crop.setInputCloud(camera_pointCloud_);
+        crop.setInputCloud(base_link_cloud);
         crop.setMin(min_pt);
         crop.setMax(max_pt);
         crop.filter(*cropped_cloud);
@@ -116,14 +142,16 @@ namespace barbot {
                     object_marker.type = visualization_msgs::Marker::CUBE;
                     object_marker.pose = object.pose;
                     object_marker.scale = object.dimensions;
-                    object_marker.color.b = 1;
-                    object_marker.color.a = 0.7;
+                    object_marker.color.b = 0.5;
+                    object_marker.color.r = 0.3 + (i * 0.1);                    
+                    object_marker.color.g = 0.1 + (i * 0.1);                    
+                    object_marker.color.a = 0.3 + (i * 0.1);
                     marker_pub_.publish(object_marker);
                     finalPosition.x = object_marker.pose.position.x;
                     finalPosition.y = object_marker.pose.position.y;
                     finalPosition.z = object_marker.pose.position.z;
-                    ROS_DEBUG("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
-                    ROS_DEBUG("Object Scale %ld, x =  %f, y =  %f, z =  %f", i, object_marker.scale.x, object_marker.scale.y, object_marker.scale.z);
+                    ROS_INFO("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
+                    ROS_INFO("Object Scale %ld, x =  %f, y =  %f, z =  %f", i, object_marker.scale.x, object_marker.scale.y, object_marker.scale.z);
                 }
             }
             
@@ -136,6 +164,6 @@ namespace barbot {
         return true;
     }
     void SegmentObjects::HeadCamCallback(const sensor_msgs::PointCloud2& msg) {
-        pcl::fromROSMsg(msg, *camera_pointCloud_);
+        camera_pointCloud_ = msg;
     }
 }  // namespace barbot

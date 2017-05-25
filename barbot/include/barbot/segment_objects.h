@@ -20,6 +20,6 @@ class SegmentObjects {
   bool checkIfCup(geometry_msgs::Vector3 scale);
  private:
   ros::Publisher marker_pub_;
-  PointCloudC::Ptr camera_pointCloud_;
+  sensor_msgs::PointCloud2 camera_pointCloud_;
 };
 }  // namespace barbot

@@ -121,7 +121,7 @@ namespace perception {
                 min_size = curClusterSize;
             }
         }
-        ROS_DEBUG("Found %ld objects, min size: %ld, max size: %ld",
+        ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
                 object_indices->size(), min_size, max_size);
     }
 
@@ -170,7 +170,8 @@ namespace perception {
         std::vector<int> indices;
         PointCloudC::Ptr cloud(new PointCloudC());
         pcl::removeNaNFromPointCloud(*cloud_in, *cloud, indices);
-            // shape_msgs::SolidPrimitive table_shape;
+
+        // shape_msgs::SolidPrimitive table_shape;
         // PointCloudC::Ptr extract_out_table(new PointCloudC());
         // geometry_msgs::Pose table_pose;
         // perception::FitBox(*segmented_cloud, coeff, *extract_out_table, table_shape, table_pose);

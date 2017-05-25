@@ -2,6 +2,8 @@
 #include "pcl/filters/crop_box.h"
 
 #include "pcl_conversions/pcl_conversions.h"
+#include "pcl_ros/transforms.h"
+#include "tf/transform_listener.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
@@ -10,8 +12,23 @@ namespace perception {
     Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {}
 
     void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
+        tf::TransformListener tf_listener;
+        tf_listener.waitForTransform("base_link", msg.header.frame_id,                     
+                                ros::Time(0), ros::Duration(5.0));                       
+        tf::StampedTransform transform;                                                       
+        try {                                                                                 
+            tf_listener.lookupTransform("base_link", msg.header.frame_id, ros::Time(0), transform);                               
+        } catch (tf::LookupException& e) {                                                    
+            std::cerr << e.what() << std::endl;                                                 
+            return;                                                                           
+        } catch (tf::ExtrapolationException& e) {                                             
+            std::cerr << e.what() << std::endl;                                                 
+            return;                                                                           
+        }
+        sensor_msgs::PointCloud2 cloud_out;                                                   
+        pcl_ros::transformPointCloud("base_link", transform, msg, cloud_out);
         PointCloudC::Ptr cloud(new PointCloudC());
-        pcl::fromROSMsg(msg, *cloud);
+        pcl::fromROSMsg(cloud_out, *cloud);
         ROS_INFO("Got point cloud with %ld point", cloud->size());
         PointCloudC::Ptr cropped_cloud(new PointCloudC());
         double min_x, min_y, min_z, max_x, max_y, max_z;
