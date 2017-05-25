@@ -141,17 +141,25 @@
     Application.prototype.order = function(type, ammount) {
         var self = this;
         Materialize.toast('Ordered Drink: ' + type + ' ' + ammount + 'oz', self._toastSpeed);
+        var interval;
         this._$order.deferredFadeOut()
-        .then(() => {self._loader._$text.text('Creating Drink.'); return self._loader.show();})
+        .then(() => {
+            self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0s</h4>');
+            var time = 0;
+            var $timer = $('#timer');
+            interval = window.setInterval(() => {time++; $timer.text(time + 's');}, 1000);
+            return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
         .then(
             () => {
+                window.clearInterval(interval);
                 Materialize.toast('Drink Completed.', self._toastSpeed);
                 Materialize.toast('Enjoy!', self._toastSpeed);
                 return self._loader.setText('Drink Complete.');
             }
             ,
             (error) => {
+                window.clearInterval(interval);
                 Materialize.toast('Error: ' + error, self._toastSpeed);
                 return self._loader.setText('Drink Failed.');
             })
@@ -179,7 +187,10 @@
             Materialize.toast('Error: ' + error, self._toastSpeed);
             p.reject(error);
         });
-        ros.on('close', () => p.reject());
+        ros.on('close', () => {
+            Materialize.toast('Websocket connection closed.', self._toastSpeed);
+            p.reject();
+        });
         this._ros = ros;
         return p.promise();
     };
