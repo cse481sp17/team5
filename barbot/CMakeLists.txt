@@ -58,7 +58,7 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  UserAction.msg
+#  UserAction.msg
   DrinkJobComplete.msg
 )
 
@@ -66,6 +66,7 @@ add_message_files(
 add_service_files(
   FILES
   MoveToPerception.srv
+  UserAction.srv
 )
 
 ## Generate actions in the 'action' folder
