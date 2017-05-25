@@ -39,6 +39,10 @@ class ArmServer(object):
     def __init__(self):
         self._grip = fetch_api.Gripper()
         self._arm = fetch_api.Arm()
+        self._torso = fetch_api.Torso()
+        self._torso.set_height(0.4)
+        self._head = fetch_api.Head()
+        self._head.pan_tilt(0, 0.65)
         self._reader = ArTagReader()
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 

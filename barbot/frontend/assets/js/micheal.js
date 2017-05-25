@@ -108,7 +108,7 @@
     function Application() {
         this._loader = new Loader();
         this._$order = $('#order');
-        this._deferredOrders = {};
+        this._toastSpeed = 5000;
         return this;
     };
     Application.prototype.constructor = Application;
@@ -120,6 +120,7 @@
     Application.prototype.init = function(url) {
         this._url = url ? url : 'ws://robonaut.cs.washington.edu:9090';
         var self = this;
+        Materialize.toast('Using url ' + this._url, self._toastSpeed);
         this._connect(this._url)
         .then(
             () => self._loader.setText('Connection Successfull.'),
@@ -139,12 +140,29 @@
      */
     Application.prototype.order = function(type, ammount) {
         var self = this;
+        Materialize.toast('Ordered Drink: ' + type + ' ' + ammount + 'oz', self._toastSpeed);
+        var interval;
         this._$order.deferredFadeOut()
-        .then(() => {self._loader._$text.text('Creating Drink.'); return self._loader.show();})
+        .then(() => {
+            self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0s</h4>');
+            var time = 0;
+            var $timer = $('#timer');
+            interval = window.setInterval(() => {time++; $timer.text(time + 's');}, 1000);
+            return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
         .then(
-            () => self._loader.setText('Drink Complete.'),
-            () => self._loader.setText('Drink Failed.'))
+            () => {
+                window.clearInterval(interval);
+                Materialize.toast('Drink Completed.', self._toastSpeed);
+                Materialize.toast('Enjoy!', self._toastSpeed);
+                return self._loader.setText('Drink Complete.');
+            }
+            ,
+            (error) => {
+                window.clearInterval(interval);
+                Materialize.toast('Error: ' + error, self._toastSpeed);
+                return self._loader.setText('Drink Failed.');
+            })
         .then(() => self._loader.hide());
     };
 
@@ -157,39 +175,20 @@
         var self = this;
         var p = $.Deferred();
         var ros = new ROSLIB.Ros({url: url});
-        ros.on('connection', function() {
-            self._drinkPublisher = new ROSLIB.Topic({
+        ros.on('connection', () => {
+            self._drinkService = new ROSLIB.Service({
                 ros: ros,
-                name: '/drink_job',
-                messageType: 'barbot/UserAction'
-             });
-             self._drinkSubscriber = new ROSLIB.Topic({
-                ros: ros,
-                name: '/drink_job_complete',
-                messageType: 'barbot/DrinkJobComplete',
-                throttle_rate: 10,
+                name: '/user_actions',
+                serviceType : 'barbot/UserAction'
             });
-            self._drinkSubscriber.subscribe(
-                function(message) {
-                    // Whenever a drink job completiion message is received,
-                    //  we should see if we were the ones to order it.
-                    // If so, then we need to resolve our promise.
-                    if(self._deferredOrders[message.id] !== undefined) {
-                        var order = self._deferredOrders[message.id];
-                        delete self._deferredOrders[message.id];
-                        if(message.status == 'complete') {
-                            order.resolve();
-                        } else {
-                            order.reject();
-                        }    
-                    }
-                });
             p.resolve();
         });
-        ros.on('error', function(error) {
+        ros.on('error', (error) => {
+            Materialize.toast('Error: ' + error, self._toastSpeed);
             p.reject(error);
         });
-        ros.on('close', function() {
+        ros.on('close', () => {
+            Materialize.toast('Websocket connection closed.', self._toastSpeed);
             p.reject();
         });
         this._ros = ros;
@@ -202,16 +201,22 @@
      * @param ammount The ammount of drink (oz).
      */
     Application.prototype._sendOrder = function(type, ammount) {
+        var self = this;
         var p = $.Deferred();
         var guid = generateGuid();
-        var message = new ROSLIB.Message();
-        message.command='make_drink';
-        message.type = type;
-        //message.ammount = ammount;
-        message.id = guid;
-
-        this._deferredOrders[guid] = p;
-        this._drinkPublisher.publish(message);
+        var request = new ROSLIB.ServiceRequest({
+            command : 'make_drink',
+            type : type,
+            id : guid
+        });
+        console.info("Making drink service call.");
+        
+        this._drinkService.callService(
+            request,
+            (result) => {
+                console.info("Service call returned.");
+                p.resolve();
+        });
 
         return p.promise();
     };
