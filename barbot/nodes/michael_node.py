@@ -101,7 +101,7 @@ def main():
     global arm_server
     WORKING = None
 
-    rospy.init_node('action_node')
+    rospy.init_node('barbot_controller_node')
     wait_for_time()
 
     nav_server = NavigationServer()
