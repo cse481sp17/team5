@@ -108,7 +108,6 @@
     function Application() {
         this._loader = new Loader();
         this._$order = $('#order');
-        this._deferredOrders = {};
         return this;
     };
     Application.prototype.constructor = Application;
@@ -158,32 +157,11 @@
         var p = $.Deferred();
         var ros = new ROSLIB.Ros({url: url});
         ros.on('connection', function() {
-            self._drinkPublisher = new ROSLIB.Topic({
+            self._drinkService = new ROSLIB.Service({
                 ros: ros,
-                name: '/drink_job',
-                messageType: 'barbot/UserAction'
-             });
-             self._drinkSubscriber = new ROSLIB.Topic({
-                ros: ros,
-                name: '/drink_job_complete',
-                messageType: 'barbot/DrinkJobComplete',
-                throttle_rate: 10,
+                name: '/user_actions',
+                serviceType : 'UserAction'
             });
-            self._drinkSubscriber.subscribe(
-                function(message) {
-                    // Whenever a drink job completiion message is received,
-                    //  we should see if we were the ones to order it.
-                    // If so, then we need to resolve our promise.
-                    if(self._deferredOrders[message.id] !== undefined) {
-                        var order = self._deferredOrders[message.id];
-                        delete self._deferredOrders[message.id];
-                        if(message.status == 'complete') {
-                            order.resolve();
-                        } else {
-                            order.reject();
-                        }    
-                    }
-                });
             p.resolve();
         });
         ros.on('error', function(error) {
@@ -204,14 +182,18 @@
     Application.prototype._sendOrder = function(type, ammount) {
         var p = $.Deferred();
         var guid = generateGuid();
-        var message = new ROSLIB.Message();
-        message.command='make_drink';
-        message.type = type;
-        //message.ammount = ammount;
-        message.id = guid;
-
-        this._deferredOrders[guid] = p;
-        this._drinkPublisher.publish(message);
+        var request = new ROSLIB.ServiceRequest({
+            command : 'make_drink',
+            type : type,
+            id : guid
+        });
+        console.info("Making drink service call.");
+        this._drinkService.callService(
+            request,
+            (result) => {
+                console.info("Service call returned.");
+                p.resolve();
+        });
 
         return p.promise();
     };
