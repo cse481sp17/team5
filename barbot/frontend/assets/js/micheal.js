@@ -108,7 +108,8 @@
         this._loader = new Loader();
         this._$order = $('#order');
         this._toastSpeed = 5000;
-        this._deferredOrders = [];
+        this._deferredOrder = null;
+        this._deferredOrderId = null;
         return this;
     };
     Application.prototype.constructor = Application;
@@ -192,9 +193,17 @@
                 function(message) {
                     // Whenever a drink status is received we need to see if a drink was complete
                     //  and if that completed drink was requested by us.
-                    if(message.id !== undefined && self._deferredOrders[message.completed] !== undefined) {
-                        self._deferredOrders[message.completed].resolve();
-                        delete self._deferredOrders[message.completed];
+                    if(message.completed !== undefined && self._deferredOrderId == message.completed) {
+                        self._deferredOrder.resolve();
+                        self._deferredOrder = null;
+                        self._deferredOrderId = null;
+                    } else {
+                        for(var i = 0; i < message.orders.length; i++) {
+                            if(message.orders[i] == self._deferredOrderId) {
+                                 Materialize.toast('Currently queue:' + i + ' of ' + message.orders.length, self._toastSpeed);
+                                 break;
+                            }
+                        }
                     }
                 });
             p.resolve();
@@ -229,7 +238,8 @@
             ammount: ammount
         });
 
-        self._deferredOrders[guid] = p;
+        self._deferredOrder = p;
+        self._deferredOrderId = guid;
         self._drinkPublisher.publish(message);
 
         return p.promise();
