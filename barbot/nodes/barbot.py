@@ -5,9 +5,6 @@ import rospy
 import copy
 import actionlib
 
-import NavigationServer
-import ArmServer
-
 from barbot.srv import *
 from barbot.msg import DrinkStatus, DrinkOrder
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
