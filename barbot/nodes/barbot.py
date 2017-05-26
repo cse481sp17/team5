@@ -133,25 +133,16 @@ class Barbot(object):
         Args:
             message (DrinkOrder): The drink order message.
         """
-            command_switch ={
-                'make_order' : 
-                    lambda message: 
-                        # Enque the drink job. If the robot is not
-                        # currently working then re-instantiate the pour routine.
-                        self._drink_queue.put_nowait(message)
-                        self._publish_drink_status()
-                        if not self._is_working:
-                            self._is_working = True
-                            self.fulfill_orders()
-                'cancel_order' :
-                    lambda message:
-                        # TODO Remove the order from the queue if not currently in process.
-                        pass
-            }.get(
-                message.command,
-                lambda message:
-                    rospy.logwarn('Unknown message command %s' % (command))
-            )(message)
+        if(message.command == 'make_order') :
+            # Enque the drink job. If the robot is not
+            # currently working then re-instantiate the pour routine.
+            self._drink_queue.put_nowait(message)
+            self._publish_drink_status()
+            if not self._is_working:
+                self._is_working = True
+                self.fulfill_orders()
+        else:
+            rospy.logwarn('Unknown message command %s' % (command))
 
     def _publish_drink_status(self, completed=None):
         """ Publish the current drink orders status

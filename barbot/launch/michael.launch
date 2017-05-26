@@ -1,4 +1,4 @@
 <launch>
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-  <node pkg="barbot" type="michael_node.py" name="barbot_controller_node" />
+  <node pkg="barbot" type="barbot.py" name="barbot_controller_node" />
 </launch>

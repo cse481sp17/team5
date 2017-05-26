@@ -177,6 +177,7 @@
         var p = $.Deferred();
         var ros = new ROSLIB.Ros({url: url});
         ros.on('connection', () => {
+            Materialize.toast('Websocket connection opened.', self._toastSpeed);
             self._drinkPublisher = new ROSLIB.Topic({
                 ros: ros,
                 name: '/drink_order',
@@ -191,6 +192,7 @@
             self._drinkSubscriber.subscribe(
                 /** msg.DrinkStatus */
                 function(message) {
+                    console.info("Updated received.");
                     // Whenever a drink status is received we need to see if a drink was complete
                     //  and if that completed drink was requested by us.
                     if(message.completed !== undefined && self._deferredOrderId == message.completed) {
@@ -241,6 +243,8 @@
         self._deferredOrder = p;
         self._deferredOrderId = guid;
         self._drinkPublisher.publish(message);
+
+        console.info("Drink order published: " + guid);
 
         return p.promise();
     };
