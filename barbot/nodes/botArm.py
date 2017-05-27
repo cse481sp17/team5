@@ -38,6 +38,7 @@ class ArTagReader(object):
 class ArmServer(object):
     def __init__(self):
         self._grip = fetch_api.Gripper()
+        self._base = fetch_api.Base()
         self._arm = fetch_api.Arm()
         self._torso = fetch_api.Torso()
         self._torso.set_height(0.4)
@@ -47,11 +48,16 @@ class ArmServer(object):
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 
     def findGlass(self, request):
-        current_pose = geometry_msgs.msg.Pose(orientation=geometry_msgs.msg.Quaternion(0,0,0,1))
+        current_pose = Pose(orientation=Quaternion(0,0,0,1))
         current_pose.position.x = request.x - GRIPPER_OFFSET
         current_pose.position.y = request.y
         current_pose.position.z = request.z
+
+        self._base.stop()
+        self._head.pan_tilt(0, 0.65)
+
         if (request.item == 'cup'):
+            self._head.pan_tilt(0, 0.65)
             self._grip.open()
             goal = PoseStamped()
             goal.header.frame_id = 'base_link'
@@ -65,25 +71,28 @@ class ArmServer(object):
             self._arm.move_to_pose(goal)
 
             ## find the dispenser and set the glass correctly on it
-            load_faducial_actions(PICKLE_FILE_PUT_DISPENSER)
+            self.load_faducial_actions(PICKLE_FILE_PUT_DISPENSER)
             # dispense drink into the glass for a while
-            load_faducial_actions(PICKLE_FILE_DISPENSE)
+            self.load_faducial_actions(PICKLE_FILE_DISPENSE)
             # catch the glass again
-            load_faducial_actions(PICKLE_FILE_GET_GLASS)
+            self.load_faducial_actions(PICKLE_FILE_GET_GLASS)
 
             # call the service and let the controller know the dispense work is done and now do the navigation
             # rospy.wait_for_service('barbot/action_done')
             # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
             # action_done('goBack')
         else:
-            goal = PoseStamped()
-            goal.header.frame_id = 'base_link'
-            goal.pose = copy.deepcopy(current_pose)
-            goal.pose.position.z += 2 * OFFSET_Z
-            self._arm.move_to_pose(goal)
-            goal.pose.position.z -= OFFSET_Z
-            self._arm.move_to_pose(goal)
-            self._grip.open()
+            pass
+            # goal = PoseStamped()
+            # goal.header.frame_id = 'base_link'
+            # goal.pose = copy.deepcopy(current_pose)
+            # goal.pose.position.z += 2 * OFFSET_Z
+            # self._arm.move_to_pose(goal)
+            # goal.pose.position.z -= OFFSET_Z
+            # self._arm.move_to_pose(goal)
+            # self._grip.open()
+
+
             # rospy.wait_for_service('barbot/action_done')
             # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
             # action_done('done')

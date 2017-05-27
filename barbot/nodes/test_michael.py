@@ -1,18 +1,7 @@
 #!/usr/bin/env python
 
-import fetch_api
 import rospy
-import pickle
-import copy
-import actionlib
-from interactive_markers.interactive_marker_server import InteractiveMarkerServer
-from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
-from visualization_msgs.msg import Marker
-import geometry_msgs.msg
 from barbot.srv import *
-from botNavigation import NavigationServer
-from botArm import ArmServer
-from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 from barbot.msg import *
 
 
@@ -32,6 +21,7 @@ def main():
 
 
     drink_status_pub = rospy.Publisher('/drink_order', DrinkOrder, queue_size=10, latch=True)
+    rospy.sleep(1)
     message = DrinkOrder()
     message.command = DrinkOrder.MAKE_ORDER
     message.id = '1'

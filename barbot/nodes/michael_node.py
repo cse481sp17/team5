@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import fetch_api
+import time
 import rospy
 import pickle
 import copy
@@ -43,38 +44,50 @@ def wait_for_time():
 
 def handle_user_actions(message):
     # add drink type and id 
+    global WORKING
+    global orders
     print 'I got a message'
-    if not orders.__contains__(message.id) and message.command is DrinkOrder.MAKE_ORDER:
+    print message.command
+    print message.id
+    if message.command == DrinkOrder.MAKE_ORDER and not orders.__contains__(message.id):
+        print 'appended'
         orders.append(message.id)
-    if orders.__contains__(message.id) and message.command is DrinkOrder.CANCEL_ORDER:
+    if message.command == DrinkOrder.CANCEL_ORDER:
+        print ' removed '
         orders.remove(message.id)
-    
-    handle_make_drink()
+    print orders
+    while len(orders) != 0:
+        handle_make_drink()
+    print 'orders is now empty'
 
 def handle_make_drink():
+    global WORKING
+    global orders
     if  WORKING is None:
         WORKING = orders[0]
         # navigate to the bar table
         nav_server.goToMarker(BAR_TABLE)
         print 'I got to bar table'
-        rospy.sleep(3)
+        rospy.sleep(10)
         # call service to run cpp file
         rospy.wait_for_service('barbot/move_to_perception')
         perception_service = rospy.ServiceProxy('barbot/move_to_perception', MoveToPerception)
         try:
             response = perception_service('cup')
+            'I got the response and now try to find a glass'
             arm_server.findGlass(response)
+            #arm_server.findGlass(1)
         except rospy.ServiceException, e:
             print 'Service call failed getting cup'
             nav_server.goToMarker(HOME)
-            rospy.sleep(3)
-            callservice('failed', message.id)
+            time.sleep(5)
+            callservice('failed', WORKING)
             WORKING = None
             orders.pop()
             return
 
         nav_server.goToMarker(HOME)
-        rospy.sleep(2)
+        rospy.sleep(5)
 
         count = 0
         while count < 10:
@@ -85,17 +98,17 @@ def handle_make_drink():
             except rospy.ServiceException, e:
                 count += 1
         if count == 10:
-            callservice('failed to drop', message.id)
+            callservice('failed to drop', WORKING)
             WORKING = None
             orders.pop()
             return
         # send back id and "done"
-        callservice('done', message.id)
+        callservice('done', WORKING)
         WORKING = None
         orders.pop()
     else:
         # send back "still working"
-        callservice('still working', message.id)
+        callservice('still working', WORKING)
         print 'still working'
         pass
 
@@ -103,15 +116,12 @@ def callservice(command, drink_id):
     # rospy.wait_for_service('barbot/drink_done')
     # action_done = rospy.ServiceProxy('/drink_done', NameOfService)
     # action_done(command, drink_id)
-
+    global orders
     drink_status_pub = rospy.Publisher('/drink_status', DrinkStatus, queue_size=10, latch=True)
     message = DrinkStatus()
     message.orders = orders
     message.completed = command
     drink_status_pub.publish(message)
-
-
-
 
 
 def main():
@@ -147,17 +157,17 @@ def main():
     controller_client.send_goal(goal)
 
     print 'Waiting for arm to start.'
-    controller_client.wait_for_result()
-    nav_server.goToMarker('init_pose')
-    rospy.sleep(3)
-    nav_server.goToMarker('init_pose1')
-    rospy.sleep(3)
+    # controller_client.wait_for_result()
+    # nav_server.goToMarker('init_pose')
+    # rospy.sleep(3)
+    # nav_server.goToMarker('init_pose1')
+    # rospy.sleep(3)
     nav_server.goToMarker(HOME)
-    rospy.sleep(3)
+    rospy.sleep(5)
 
     # handle user actions
     #user_actions_service = rospy.Service('barbot/user_actions', UserAction, handle_user_actions)
-    drink_order_sub = rospy.Subscriber('/DrinkOrder', DrinkOrder, handle_user_actions)
+    drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
     rospy.spin()
 
 if __name__ == '__main__':
