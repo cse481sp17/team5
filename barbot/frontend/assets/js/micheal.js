@@ -148,7 +148,10 @@
             self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0s</h4>');
             var time = 0;
             var $timer = $('#timer');
-            interval = window.setInterval(() => {time++; $timer.text(time + 's');}, 1000);
+            interval = window.setInterval(() => {time++; $timer.text(
+                (new Date).clearTime()
+                    .addSeconds(time)
+                    .toString('mm:ss'));}, 1000);
             return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
         .then(
