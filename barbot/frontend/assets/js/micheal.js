@@ -143,7 +143,7 @@
         var self = this;
         Materialize.toast('Ordered Drink: ' + type + ' ' + ammount + 'oz', self._toastSpeed);
         var interval;
-        this._$order.deferredFadeOut()
+        self._$order.deferredFadeOut()
         .then(() => {
             self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0s</h4>');
             var time = 0;
@@ -156,7 +156,8 @@
                 window.clearInterval(interval);
                 Materialize.toast('Drink Completed.', self._toastSpeed);
                 Materialize.toast('Enjoy!', self._toastSpeed);
-                return self._loader.setText('Drink Complete.');
+                return self._loader.setText('Drink Complete.')
+                .then(() => self._$order.deferredFadeIn());
             }
             ,
             (error) => {
@@ -202,7 +203,7 @@
                     } else {
                         for(var i = 0; i < message.orders.length; i++) {
                             if(message.orders[i] == self._deferredOrderId) {
-                                 Materialize.toast('Currently queue:' + i + ' of ' + message.orders.length, self._toastSpeed);
+                                 Materialize.toast('Currently queue: ' + (i + 1) + ' of ' + message.orders.length, self._toastSpeed);
                                  break;
                             }
                         }
