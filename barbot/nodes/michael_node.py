@@ -65,13 +65,23 @@ def handle_make_drink():
     global orders
     if  WORKING is None:
         WORKING = orders[0]
+        # set the arm to the pre pose
+        arm_server.set_prepose()
+        time.sleep(10)
+
         # navigate to the bar table
-        nav_server.goToMarker(BAR_TABLE)
-        print 'I got to bar table'
-        rospy.sleep(10)
+        # print 'moving to home1'
+        # nav_server.goToMarker('home1')
+        # time.sleep(10)
+        # print 'I got home1'
+
+        # nav_server.goToMarker(BAR_TABLE)
+        # print 'moving to bar table'
+        # time.sleep(15)
+        # print 'I got to bar table'
         # call service to run cpp file
-        rospy.wait_for_service('barbot/move_to_perception')
-        perception_service = rospy.ServiceProxy('barbot/move_to_perception', MoveToPerception)
+        rospy.wait_for_service('move_to_perception')
+        perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
         try:
             response = perception_service('cup')
             'I got the response and now try to find a glass'
@@ -79,15 +89,17 @@ def handle_make_drink():
             #arm_server.findGlass(1)
         except rospy.ServiceException, e:
             print 'Service call failed getting cup'
-            nav_server.goToMarker(HOME)
-            time.sleep(5)
+            # nav_server.goToMarker(HOME)
+            # time.sleep(5)
             callservice('failed', WORKING)
             WORKING = None
             orders.pop()
             return
 
-        nav_server.goToMarker(HOME)
-        rospy.sleep(5)
+        print 'moving to home'
+        # nav_server.goToMarker(HOME)
+        # time.sleep(20)
+        print 'I got home'
 
         count = 0
         while count < 10:
@@ -159,11 +171,11 @@ def main():
     print 'Waiting for arm to start.'
     # controller_client.wait_for_result()
     # nav_server.goToMarker('init_pose')
-    # rospy.sleep(3)
+    # time.sleep(5)
     # nav_server.goToMarker('init_pose1')
-    # rospy.sleep(3)
-    nav_server.goToMarker(HOME)
-    rospy.sleep(5)
+    # time.sleep(5)
+    # nav_server.goToMarker(HOME)
+    # time.sleep(15)
 
     # handle user actions
     #user_actions_service = rospy.Service('barbot/user_actions', UserAction, handle_user_actions)

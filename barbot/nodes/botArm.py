@@ -21,8 +21,9 @@ PICKLE_FILE_PUT_DISPENSER='put_dispenser.p'
 PICKLE_FILE_PUT_CLIENT='put_client.p'
 PICKLE_FILE_DISPENSE='dispenser.p'
 PICKLE_FILE_GET_GLASS='get_glass.p'
+PICKLE_FILE_SET_PREPOSE='set_prepose.p'
 
-OFFSET_X = 0.15
+OFFSET_X = 0.10
 OFFSET_Z = 0.10 # should be the hight of the cup
 GRIPPER_OFFSET = 0.171
 DISPENSE_TIME = 3.0
@@ -47,11 +48,14 @@ class ArmServer(object):
         self._reader = ArTagReader()
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 
+    def set_prepose(self):
+        self.load_faducial_actions(PICKLE_FILE_SET_PREPOSE)
+
     def findGlass(self, request):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))
         current_pose.position.x = request.x - GRIPPER_OFFSET
         current_pose.position.y = request.y
-        current_pose.position.z = request.z
+        current_pose.position.z = request.z + 0.03
 
         self._base.stop()
         self._head.pan_tilt(0, 0.65)
@@ -66,8 +70,11 @@ class ArmServer(object):
             self._arm.move_to_pose(goal)
             goal.pose.position.x += OFFSET_X
             self._arm.move_to_pose(goal)
-            self._grip.close()
+            self._grip.close(50)
             goal.pose.position.z += OFFSET_Z
+            self._arm.move_to_pose(goal)
+
+            goal.pose.position.x -= OFFSET_X * 2
             self._arm.move_to_pose(goal)
 
             ## find the dispenser and set the glass correctly on it
@@ -82,15 +89,18 @@ class ArmServer(object):
             # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
             # action_done('goBack')
         else:
-            pass
-            # goal = PoseStamped()
-            # goal.header.frame_id = 'base_link'
-            # goal.pose = copy.deepcopy(current_pose)
-            # goal.pose.position.z += 2 * OFFSET_Z
-            # self._arm.move_to_pose(goal)
-            # goal.pose.position.z -= OFFSET_Z
-            # self._arm.move_to_pose(goal)
-            # self._grip.open()
+            goal = PoseStamped()
+            goal.header.frame_id = 'base_link'
+            goal.pose = copy.deepcopy(current_pose)
+            goal.pose.position.z -= 0.03
+            goal.pose.position.x += OFFSET_X * 2
+            goal.pose.position.z += 2 * OFFSET_Z
+            self._arm.move_to_pose(goal)
+            goal.pose.position.z -= OFFSET_Z
+            self._arm.move_to_pose(goal)
+            self._grip.open()
+            goal.pose.position.x -= OFFSET_X
+            self._arm.move_to_pose(goal)
 
 
             # rospy.wait_for_service('barbot/action_done')
@@ -142,7 +152,7 @@ class ArmServer(object):
                 self._grip.open()
             elif pose_action.actionType == PoseExecutable.CLOSE:
                 print 'Closing the gripper'
-                self._grip.close()
+                self._grip.close(50)
             elif pose_action.actionType == PoseExecutable.MOVETO:
                 print 'Moving to location.'
                 pose_stamped = PoseStamped()
