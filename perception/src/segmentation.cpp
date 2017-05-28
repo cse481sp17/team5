@@ -66,7 +66,6 @@ namespace perception {
             ROS_ERROR("Unable to find surface.");
             return;
         }
-        ROS_DEBUG("Segmented Cloud");
     }
 
     void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, geometry_msgs::Pose* pose, geometry_msgs::Vector3* dimensions) {
@@ -121,7 +120,7 @@ namespace perception {
                 min_size = curClusterSize;
             }
         }
-        ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
+        ROS_DEBUG("Found %ld objects, min size: %ld, max size: %ld",
                 object_indices->size(), min_size, max_size);
     }
 

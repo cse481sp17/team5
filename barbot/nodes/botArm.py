@@ -28,6 +28,8 @@ OFFSET_Z = 0.10 # should be the hight of the cup
 GRIPPER_OFFSET = 0.171
 DISPENSE_TIME = 3.0
 pre_pose_list = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
+move_arm_to_the_right = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
+# test [-1.3705930364835375, 1.280469534625107, 3.138322253626793, 1.102770685640171, -1.2980107896440538, 0.5342823853513483, -1.8845609229070917]
 
 
 class ArTagReader(object):
@@ -50,8 +52,11 @@ class ArmServer(object):
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 
     def set_prepose(self):
-        #self.load_faducial_actions(PICKLE_FILE_SET_PREPOSE)
+        #self.load_fiducial_marker_actions(PICKLE_FILE_SET_PREPOSE)
         self._arm.move_to_joints(fetch_api.ArmJoints.from_list(pre_pose_list))
+
+    def set_arm_to_the_right(self):
+        self._arm.move_to_joints(fetch_api.ArmJoints.from_list(move_arm_to_the_right))
 
     def findGlass(self, request):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))
@@ -72,37 +77,53 @@ class ArmServer(object):
             self._arm.move_to_pose(goal)
             goal.pose.position.x += OFFSET_X
             self._arm.move_to_pose(goal)
-            self._grip.close(50)
-            goal.pose.position.z += OFFSET_Z
+            self._grip.close(45)
+            goal.pose.position.z += OFFSET_Z * 1.5
             self._arm.move_to_pose(goal)
 
             goal.pose.position.x -= OFFSET_X * 2
             self._arm.move_to_pose(goal)
 
-            ## find the dispenser and set the glass correctly on it
-            self.load_faducial_actions(PICKLE_FILE_PUT_DISPENSER)
-            # dispense drink into the glass for a while
-            self.load_faducial_actions(PICKLE_FILE_DISPENSE)
-            # catch the glass again
-            self.load_faducial_actions(PICKLE_FILE_GET_GLASS)
+            # goal.pose.position.y += OFFSET_X
+            # self._arm.move_to_pose(goal)
 
+            goal.pose.position.z -= OFFSET_Z
+            self._arm.move_to_pose(goal)
+
+            ## find the dispenser and set the glass correctly on it
+            self.load_fiducial_marker_actions(PICKLE_FILE_PUT_DISPENSER)
+            # dispense drink into the glass for a while
+            self.load_fiducial_marker_actions(PICKLE_FILE_DISPENSE)
+            # catch the glass again
+            self.load_fiducial_marker_actions(PICKLE_FILE_GET_GLASS)
+
+            # self.set_prepose()
+            #self.set_arm_to_the_right()
+
+            self._head.pan_tilt(0, 0)
             # call the service and let the controller know the dispense work is done and now do the navigation
             # rospy.wait_for_service('barbot/action_done')
             # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
             # action_done('goBack')
         else:
+            #self.set_prepose()
+            self._head.pan_tilt(0, 0.65)
             goal = PoseStamped()
             goal.header.frame_id = 'base_link'
             goal.pose = copy.deepcopy(current_pose)
-            goal.pose.position.z -= 0.03
             goal.pose.position.x -= OFFSET_X
             goal.pose.position.z += 2 * OFFSET_Z
             self._arm.move_to_pose(goal)
-            goal.pose.position.z -= OFFSET_Z
-            self._arm.move_to_pose(goal)
-            self._grip.open()
-            goal.pose.position.x -= OFFSET_X * 2
-            self._arm.move_to_pose(goal)
+            goal.pose.position.z -= (OFFSET_Z + 0.05)
+            error = self._arm.move_to_pose(goal)
+            if error is None:
+                self._grip.open()
+                goal.pose.position.x -= OFFSET_X * 2
+                self._arm.move_to_pose(goal)
+                return True
+            else:
+                return False
+            
 
 
             # rospy.wait_for_service('barbot/action_done')
@@ -133,7 +154,7 @@ class ArmServer(object):
         base_link_mat[3][3] = 1
         return base_link_mat
 
-    def load_faducial_actions(self, fileName):
+    def load_fiducial_marker_actions(self, fileName):
         pose_actions = None
         try:
             pose_actions = pickle.load(open(fileName, "rb"))
@@ -173,6 +194,14 @@ class ArmServer(object):
                             pose_stamped = PoseStamped()
                             pose_stamped.header.frame_id = "base_link"
                             pose_stamped.pose = self.transform_to_pose(result2)
+                            if fileName == PICKLE_FILE_PUT_DISPENSER or fileName == PICKLE_FILE_GET_GLASS:
+                                pose_stamped.pose.position.z += 0.04
+                                pose_stamped.pose.position.x -= 0.03
+                                if fileName == PICKLE_FILE_PUT_DISPENSER:
+                                    pose_stamped.pose.y -= 0.02
+                            else:
+                                pose_stamped.pose.position.x -= 0.01
+
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
                 if error is not None:
                     print 'Error moving to {}.'.format(pose_action.pose)

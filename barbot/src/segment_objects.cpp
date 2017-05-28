@@ -150,8 +150,8 @@ namespace barbot {
                     finalPosition.x = object_marker.pose.position.x;
                     finalPosition.y = object_marker.pose.position.y;
                     finalPosition.z = object_marker.pose.position.z;
-                    ROS_INFO("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
-                    ROS_INFO("Object Scale %ld, x =  %f, y =  %f, z =  %f", i, object_marker.scale.x, object_marker.scale.y, object_marker.scale.z);
+                    ROS_DEBUG("Object  %ld, x =  %f, y =  %f, z =  %f", i, finalPosition.x, finalPosition.y, finalPosition.z);
+                    ROS_DEBUG("Object Scale %ld, x =  %f, y =  %f, z =  %f", i, object_marker.scale.x, object_marker.scale.y, object_marker.scale.z);
                 }
             }
             
