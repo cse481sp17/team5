@@ -8,6 +8,6 @@
   <param name="crop_max_x" value="1.05" />
   <param name="crop_min_z" value="0.7" />
   <node pkg="barbot" type="listener_node" name="listener_node" output="screen">
-    <remap from="cloud_in" to="/head_camera/depth/points" />
+    <remap from="cloud_in" to="mock_point_cloud" />
   </node>
 </launch>

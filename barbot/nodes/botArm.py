@@ -27,6 +27,7 @@ OFFSET_X = 0.10
 OFFSET_Z = 0.10 # should be the hight of the cup
 GRIPPER_OFFSET = 0.171
 DISPENSE_TIME = 3.0
+pre_pose_list = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
 
 
 class ArTagReader(object):
@@ -49,7 +50,8 @@ class ArmServer(object):
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 
     def set_prepose(self):
-        self.load_faducial_actions(PICKLE_FILE_SET_PREPOSE)
+        #self.load_faducial_actions(PICKLE_FILE_SET_PREPOSE)
+        self._arm.move_to_joints(fetch_api.ArmJoints.from_list(pre_pose_list))
 
     def findGlass(self, request):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))
@@ -93,13 +95,13 @@ class ArmServer(object):
             goal.header.frame_id = 'base_link'
             goal.pose = copy.deepcopy(current_pose)
             goal.pose.position.z -= 0.03
-            goal.pose.position.x += OFFSET_X * 2
+            goal.pose.position.x -= OFFSET_X
             goal.pose.position.z += 2 * OFFSET_Z
             self._arm.move_to_pose(goal)
             goal.pose.position.z -= OFFSET_Z
             self._arm.move_to_pose(goal)
             self._grip.open()
-            goal.pose.position.x -= OFFSET_X
+            goal.pose.position.x -= OFFSET_X * 2
             self._arm.move_to_pose(goal)
 
 

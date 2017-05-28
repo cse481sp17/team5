@@ -71,6 +71,7 @@ def main():
         message9.data = value[9]
         wrist_roll_pub.publish(message9)
 
+        print value
         rate.sleep()
 
 

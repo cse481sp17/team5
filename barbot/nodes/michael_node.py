@@ -179,6 +179,7 @@ def main():
 
     # handle user actions
     #user_actions_service = rospy.Service('barbot/user_actions', UserAction, handle_user_actions)
+    print ' HI MOM'
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
     rospy.spin()
 

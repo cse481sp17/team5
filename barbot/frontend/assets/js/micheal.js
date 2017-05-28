@@ -238,7 +238,7 @@
             command: 'make_order',
             id: guid,
             type: type,
-            ammount: ammount
+            ammount: String(ammount)
         });
 
         self._deferredOrder = p;
