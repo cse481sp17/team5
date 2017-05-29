@@ -1,5 +1,6 @@
 <launch>
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+    <include file="fetch_nav.launch" />
     <node pkg="barbot" type="michael_node.py" name="barbot_controller_node" />
     <param name="ec_cluster_tolerance" value="0.03" />
     <param name="ec_min_cluster_size" value="700" />
@@ -10,6 +11,6 @@
     <param name="crop_max_x" value="1.05" />
     <param name="crop_min_z" value="0.7" />
     <node pkg="barbot" type="listener_node" name="listener_node" output="screen">
-    <remap from="cloud_in" to="/head_camera/depth/points" />
+    <remap from="cloud_in" to="head_camera/depth/points" />
     </node>
 </launch>
