@@ -124,7 +124,7 @@ class ArmServer(object):
             goal.pose.position.x -= OFFSET_X
             goal.pose.position.z += 2 * OFFSET_Z
             self._arm.move_to_pose(goal)
-            goal.pose.position.z -= (OFFSET_Z + 0.05)
+            goal.pose.position.z -= (OFFSET_Z + 0.07)
             error = self._arm.move_to_pose(goal)
 
             if error is None:
@@ -158,7 +158,7 @@ class ArmServer(object):
         return base_link_mat
 
 
-    def load_fiducial_marker_actions(self, fileName):
+    def load_fiducial_marker_actions(self, fileName, amount=3.0):
         pose_actions = copy.deepcopy(self.actions[fileName])
 
         count = 0
@@ -188,10 +188,10 @@ class ArmServer(object):
                             pose_stamped.header.frame_id = "base_link"
                             pose_stamped.pose = self.transform_to_pose(result2)
                             if fileName == PICKLE_FILE_PUT_DISPENSER or fileName == PICKLE_FILE_GET_GLASS:
-                                pose_stamped.pose.position.z += 0.02
+                                pose_stamped.pose.position.z += 0.01
                                 pose_stamped.pose.position.x -= 0.02
                                 if fileName == PICKLE_FILE_PUT_DISPENSER:
-                                    pose_stamped.pose.position.y -= 0.015
+                                    pose_stamped.pose.position.y -= 0.01
                             else:
                                 pose_stamped.pose.position.x -= 0.01
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
@@ -199,34 +199,6 @@ class ArmServer(object):
                     print 'Error moving to {}.'.format(pose_action.pose)
                     
                 if fileName is PICKLE_FILE_DISPENSE and count == 3:
-                    rospy.sleep(DISPENSE_TIME)
+                    rospy.sleep(amount)
             else:
                 print 'invalid command {}'.format(pose_action.action)
-
-
-# def main():
-
-#     rospy.init_node('bot_arm')
-#     wait_for_time()
-
-#     # arm_server = ArmServer()
-#     # # Arm_server.init
-#     # reader = ArTagReader()
-#     # sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, reader.callback)
-#     # # MOVE TO MICHAEL_NODE
-#     # controller_client = actionlib.SimpleActionClient('/query_controller_states', QueryControllerStatesAction)
-#     # rospy.sleep(0.5)
-#     # goal = QueryControllerStatesGoal()
-#     # state = ControllerState()
-#     # state.name = 'arm_controller/follow_joint_trajectory'
-#     # state.state = ControllerState.RUNNING
-#     # goal.updates.append(state)
-#     # controller_client.send_goal(goal)
-
-#     # print 'Waiting for arm to start.'
-#     # controller_client.wait_for_result()
-
-#     rospy.spin()
-
-# if __name__ == '__main__':
-#     main()
