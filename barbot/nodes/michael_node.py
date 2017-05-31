@@ -92,6 +92,7 @@ def handle_make_drink():
         print 'moving to home'
         arm_server.lookup()
         nav_server.goToMarker(HOME)
+        arm_server.lookdown()
         error = True
         count = 0
         while count < 3:
@@ -148,11 +149,8 @@ def main():
 
     gripper = fetch_api.Gripper()
     arm = fetch_api.Arm()
-
-    print 'Arm and gripper instantiated.'
-
-
     arm_server = ArmServer()
+    print 'Arm servre instantiated.'
 
     # MOVE TO MICHAEL_NODE
     controller_client = actionlib.SimpleActionClient('/query_controller_states', QueryControllerStatesAction)
@@ -171,7 +169,11 @@ def main():
     arm_server.lookup()
     # nav_server.goToMarker('init_pose')
     # nav_server.goToMarker('init_pose1')
+
+    print 'going home'
     nav_server.goToMarker(HOME)
+
+    print 'please start to order now'
 
     # handle user actions
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)

@@ -146,8 +146,8 @@ class Arm(object):
 
     def move_to_pose(self,
                  pose_stamped,
-                 allowed_planning_time=15.0,
-                 execution_timeout=15.0,
+                 allowed_planning_time=20.0,
+                 execution_timeout=20.0,
                  group_name='arm',
                  num_planning_attempts=10,
                  plan_only=False,

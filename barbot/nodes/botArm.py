@@ -18,10 +18,11 @@ from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControlle
 import tf.transformations as tft
 
 PICKLE_FILE_PUT_DISPENSER='put_dispenser.p'
-PICKLE_FILE_PUT_CLIENT='put_client.p'
 PICKLE_FILE_DISPENSE='dispenser.p'
 PICKLE_FILE_GET_GLASS='get_glass.p'
-PICKLE_FILE_SET_PREPOSE='set_prepose.p'
+
+pickle_files = [PICKLE_FILE_PUT_DISPENSER, PICKLE_FILE_DISPENSE, PICKLE_FILE_GET_GLASS]
+
 
 OFFSET_X = 0.10
 OFFSET_Z = 0.10 # should be the hight of the cup
@@ -47,12 +48,21 @@ class ArmServer(object):
         self._torso = fetch_api.Torso()
         self._torso.set_height(0.4)
         self._head = fetch_api.Head()
-        self._head.pan_tilt(0, 0.65)
+        self._head.pan_tilt(0, 0.0)
+        self.actions = {}
+        for fileName in pickle_files:
+            pose_actions = None
+            try:
+                pose_actions = pickle.load(open(fileName, "rb"))
+                print '{} loaded.'.format(fileName)
+            except:
+                print '{} could not be loaded.'.format(fileName)
+            self.actions[fileName] = pose_actions
+
         self._reader = ArTagReader()
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
 
     def set_prepose(self):
-        #self.load_fiducial_marker_actions(PICKLE_FILE_SET_PREPOSE)
         self._arm.move_to_joints(fetch_api.ArmJoints.from_list(pre_pose_list))
 
     def set_arm_to_the_right(self):
@@ -105,11 +115,6 @@ class ArmServer(object):
 
             # self.set_prepose()
             #self.set_arm_to_the_right()
-
-            # call the service and let the controller know the dispense work is done and now do the navigation
-            # rospy.wait_for_service('barbot/action_done')
-            # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
-            # action_done('goBack')
         else:
             #self.set_prepose()
             self._head.pan_tilt(0, 0.65)
@@ -129,14 +134,6 @@ class ArmServer(object):
                 return True
             else:
                 return False
-            
-
-
-            # rospy.wait_for_service('barbot/action_done')
-            # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
-            # action_done('done')
-            
-
 
     def transform_to_pose(self, matrix):
         pose = Pose()
@@ -160,30 +157,20 @@ class ArmServer(object):
         base_link_mat[3][3] = 1
         return base_link_mat
 
+
     def load_fiducial_marker_actions(self, fileName):
-        pose_actions = None
-        try:
-            pose_actions = pickle.load(open(fileName, "rb"))
-            print '{} loaded.'.format(fileName)
-        except:
-            print '{} could not be loaded.'.format(fileName)
-            usage()
-            return
+        pose_actions = copy.deepcopy(self.actions[fileName])
 
         count = 0
 
         # Run through each of the actions
         for pose_action in pose_actions:
             count += 1
-            print 'Performing action.'
             if pose_action.actionType == PoseExecutable.OPEN:
-                print 'Opening the gripper'
                 self._grip.open()
             elif pose_action.actionType == PoseExecutable.CLOSE:
-                print 'Closing the gripper'
                 self._grip.close(50)
             elif pose_action.actionType == PoseExecutable.MOVETO:
-                print 'Moving to location.'
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = "base_link"
                 if pose_action.relativeFrame == 'base_link':
@@ -201,13 +188,12 @@ class ArmServer(object):
                             pose_stamped.header.frame_id = "base_link"
                             pose_stamped.pose = self.transform_to_pose(result2)
                             if fileName == PICKLE_FILE_PUT_DISPENSER or fileName == PICKLE_FILE_GET_GLASS:
-                                pose_stamped.pose.position.z += 0.04
-                                pose_stamped.pose.position.x -= 0.03
+                                pose_stamped.pose.position.z += 0.02
+                                pose_stamped.pose.position.x -= 0.02
                                 if fileName == PICKLE_FILE_PUT_DISPENSER:
-                                    pose_stamped.pose.position.y -= 0.02
+                                    pose_stamped.pose.position.y -= 0.015
                             else:
                                 pose_stamped.pose.position.x -= 0.01
-
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
                 if error is not None:
                     print 'Error moving to {}.'.format(pose_action.pose)
