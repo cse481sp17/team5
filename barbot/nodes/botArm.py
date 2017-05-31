@@ -60,6 +60,9 @@ class ArmServer(object):
 
     def lookup(self):
         self._head.pan_tilt(0, 0)
+    
+    def lookdown(self):
+        self._head.pan_tilt(0, 0.65)
 
     def findGlass(self, request):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))

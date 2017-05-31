@@ -67,6 +67,7 @@ def handle_make_drink():
         arm_server.lookup()
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
+        arm_server.lookdown()
         arm_server.set_prepose()
         rospy.wait_for_service('move_to_perception')
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
