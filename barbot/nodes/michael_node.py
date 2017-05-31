@@ -46,8 +46,9 @@ def handle_user_actions(message):
         print ' order cancelled '
         orders.remove(message.id)
     print orders
-    thread = Thread(target = handle_make_drink)
-    thread.start()
+    handle_make_drink()
+    # thread = Thread(target = handle_make_drink)
+    # thread.start()
 
 def handle_make_drink():
     global WORKING
@@ -71,8 +72,10 @@ def handle_make_drink():
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
         try:
             response = perception_service('cup')
-            'I got the response and now try to find a glass'
+            print 'I got the response and now try to find a glass'
+            rospy.loginfo('x = %f, y = %f, z = %f, item = %s', response.x, response.y, response.z, response.item)
             arm_server.findGlass(response)
+
             #arm_server.findGlass(1)
         except rospy.ServiceException, e:
             print 'Service call failed getting cup'
