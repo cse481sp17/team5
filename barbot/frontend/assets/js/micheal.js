@@ -121,7 +121,7 @@
     Application.prototype.init = function(url) {
         this._url = url ? url : 'ws://robonaut.cs.washington.edu:9090';
         var self = this;
-        Materialize.toast('Using url ' + this._url, self._toastSpeed);
+        Materialize.toast('Using ' + this._url, self._toastSpeed);
         this._connect(this._url)
         .then(
             () => self._loader.setText('Connection Successfull.'),
@@ -145,13 +145,15 @@
         var interval;
         self._$order.deferredFadeOut()
         .then(() => {
-            self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0s</h4>');
+            self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0m 00s</h4>');
             var time = 0;
             var $timer = $('#timer');
-            interval = window.setInterval(() => {time++; $timer.text(
-                (new Date).clearTime()
-                    .addSeconds(time)
-                    .toString('mm:ss'));}, 1000);
+            interval = window.setInterval(() => {
+		time++;
+		var minutes = Math.floor(time/60);
+		var seconds = time % 60;
+		$timer.text(minutes + "m " + ('0' + seconds).slice(-2) + "s");
+		}, 1000);
             return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
         .then(
@@ -165,7 +167,7 @@
             ,
             (error) => {
                 window.clearInterval(interval);
-                Materialize.toast('Error: ' + error, self._toastSpeed);
+                Materialize.toast('Error: ' + error.type, self._toastSpeed);
                 return self._loader.setText('Drink Failed.');
             })
         .then(() => self._loader.hide());
@@ -206,7 +208,7 @@
                     } else {
                         for(var i = 0; i < message.orders.length; i++) {
                             if(message.orders[i] == self._deferredOrderId) {
-                                 Materialize.toast('Currently queue: ' + (i + 1) + ' of ' + message.orders.length, self._toastSpeed);
+                                 Materialize.toast('Currently in queue: ' + (i + 1) + ' of ' + message.orders.length, self._toastSpeed);
                                  break;
                             }
                         }
@@ -215,7 +217,7 @@
             p.resolve();
         });
         ros.on('error', (error) => {
-            Materialize.toast('Error: ' + error, self._toastSpeed);
+            Materialize.toast('Error: ' + error.type, self._toastSpeed);
             p.reject(error);
         });
         ros.on('close', () => {

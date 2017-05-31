@@ -15,7 +15,7 @@ import move_base_msgs.msg
 from barbot.srv import *
 
 
-PICKLE_FILE='pose_list_n.p'
+PICKLE_FILE='pose_list.p'
 BAR_TABLE='bar_table'
 HOME='home'
 
@@ -40,14 +40,15 @@ class NavigationServer(object):
         pickle.dump(self.pose_names_list, open(PICKLE_FILE, "wb" ))
     
     def goToMarker(self, name):
-        target_pose_marker = self.pose_names_list[name]
-        message = geometry_msgs.msg.PoseStamped()
-        message.header.frame_id = "map"
-        message.pose = target_pose_marker
-        goal = move_base_msgs.msg.MoveBaseGoal()
-        goal.target_pose = message
-        self._target_pose_client.send_goal(goal)
-        self._target_pose_client.wait_for_result()
+        pass
+        # target_pose_marker = self.pose_names_list[name]
+        # message = geometry_msgs.msg.PoseStamped()
+        # message.header.frame_id = "map"
+        # message.pose = target_pose_marker
+        # goal = move_base_msgs.msg.MoveBaseGoal()
+        # goal.target_pose = message
+        # self._target_pose_client.send_goal(goal)
+        # self._target_pose_client.wait_for_result()
         
 
     def deleteMarker(self, name):

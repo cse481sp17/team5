@@ -58,6 +58,9 @@ class ArmServer(object):
     def set_arm_to_the_right(self):
         self._arm.move_to_joints(fetch_api.ArmJoints.from_list(move_arm_to_the_right))
 
+    def lookup(self):
+        self._head.pan_tilt(0, 0)
+
     def findGlass(self, request):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))
         current_pose.position.x = request.x - GRIPPER_OFFSET
@@ -100,7 +103,6 @@ class ArmServer(object):
             # self.set_prepose()
             #self.set_arm_to_the_right()
 
-            self._head.pan_tilt(0, 0)
             # call the service and let the controller know the dispense work is done and now do the navigation
             # rospy.wait_for_service('barbot/action_done')
             # action_done = rospy.ServiceProxy('barbot/action_done', ActionDone)
@@ -116,6 +118,7 @@ class ArmServer(object):
             self._arm.move_to_pose(goal)
             goal.pose.position.z -= (OFFSET_Z + 0.05)
             error = self._arm.move_to_pose(goal)
+
             if error is None:
                 self._grip.open()
                 goal.pose.position.x -= OFFSET_X * 2
@@ -198,7 +201,7 @@ class ArmServer(object):
                                 pose_stamped.pose.position.z += 0.04
                                 pose_stamped.pose.position.x -= 0.03
                                 if fileName == PICKLE_FILE_PUT_DISPENSER:
-                                    pose_stamped.pose.y -= 0.02
+                                    pose_stamped.pose.position.y -= 0.02
                             else:
                                 pose_stamped.pose.position.x -= 0.01
 
@@ -206,7 +209,7 @@ class ArmServer(object):
                 if error is not None:
                     print 'Error moving to {}.'.format(pose_action.pose)
                     
-                if fileName is PICKLE_FILE_DISPENSE and count == 2:
+                if fileName is PICKLE_FILE_DISPENSE and count == 3:
                     rospy.sleep(DISPENSE_TIME)
             else:
                 print 'invalid command {}'.format(pose_action.action)

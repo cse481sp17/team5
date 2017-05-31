@@ -1,14 +1,14 @@
 <launch>
-    <include file="$(find barbot)/launch/nav_rviz.launch" />
+    <include file="$(find applications)/launch/nav_rviz.launch" />
     <include file="$(find fetch_api)/launch/move_group.launch" />
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
     <include file="$(find barbot)/launch/fetch_nav.launch">
         <arg name="map_file" default="$(find barbot)/maps/playground.yaml" />
     </include>
     <include file="$(find fetch_api)/launch/ar_desktop.launch">
-        <arg name="cam_image_topic" default="" />
+        <arg name="cam_image_topic" default="mock_point_cloud" />
     </include>
-    <!--<node pkg="barbot" type="michael_node.py" name="barbot_controller_node" output="screen"/>-->
+    <node pkg="barbot" type="michael_node.py" name="barbot_controller_node" output="screen"/>
     <param name="ec_cluster_tolerance" value="0.03" />
     <param name="ec_min_cluster_size" value="700" />
     <param name="ec_max_cluster_size" value="7500" />
@@ -18,6 +18,6 @@
     <param name="crop_max_x" value="1.05" />
     <param name="crop_min_z" value="0.7" />
     <node pkg="barbot" type="listener_node" name="listener_node">
-        <remap from="cloud_in" to="head_camera/depth_registered/points" />
+        <remap from="cloud_in" to="mock_point_cloud" />
     </node>
 </launch>

@@ -13,7 +13,7 @@ from visualization_msgs.msg import Marker
 import geometry_msgs.msg
 import sys
 
-PICKLE_FILE='pose_list_n.p'
+PICKLE_FILE='pose_list.p'
 PICKLE_FILE_DISPENSER='dispenser.p'
 BAR_TABLE='bar_table'
 HOME='home'
