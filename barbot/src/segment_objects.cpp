@@ -32,8 +32,8 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 typedef barbot::MoveToPerception MpServ;
 
 namespace barbot {
-    SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
-        : marker_pub_(marker_pub) {}
+    SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub, const std::string cloudin)
+        : marker_pub_(marker_pub), cloud_in(cloudin) {}
 
     // double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
     //     double aggreg = 0.0;
@@ -59,7 +59,7 @@ namespace barbot {
 
     bool SegmentObjects::ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
         ROS_INFO("Service call received of type %s", req.perception.c_str());
-        sensor_msgs::PointCloud2ConstPtr camera_pointCloud_ = ros::topic::waitForMessage<sensor_msgs::PointCloud2>("cloud_in");
+        sensor_msgs::PointCloud2ConstPtr camera_pointCloud_ = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(cloud_in);
         tf::TransformListener tf_listener;
         tf_listener.waitForTransform("base_link", camera_pointCloud_->header.frame_id,                     
                                 ros::Time(0), ros::Duration(5.0));                       

@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     ros::Publisher marker_pub =
         nh.advertise<visualization_msgs::Marker>("visualization_marker", 1, true);
-    barbot::SegmentObjects segobjs(marker_pub);
+    barbot::SegmentObjects segobjs(marker_pub, "cloud_in");
     // ros::Subscriber sub =
     //     nh.subscribe("cloud_in", 1, &barbot::SegmentObjects::HeadCamCallback, &segobjs);
     ros::ServiceServer runPercepService =

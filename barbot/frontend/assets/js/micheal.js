@@ -119,7 +119,7 @@
      * @param url The url of the Fetch Robot.
      */
     Application.prototype.init = function(url) {
-        this._url = url ? url : 'ws://robonaut.cs.washington.edu:9090';
+        this._url = url ? url : 'ws://astro.cs.washington.edu:9090';
         var self = this;
         Materialize.toast('Using ' + this._url, self._toastSpeed);
         this._connect(this._url)
