@@ -6,7 +6,7 @@
         <arg name="map_file" default="$(find barbot)/maps/playground.yaml" />
     </include>
     <include file="$(find fetch_api)/launch/ar_desktop.launch">
-        <arg name="cam_image_topic" default="" />
+        <!--<arg name="cam_image_topic" default="" />-->
     </include>
     <!--<node pkg="barbot" type="michael_node.py" name="barbot_controller_node" output="screen"/>-->
     <param name="ec_cluster_tolerance" value="0.03" />
