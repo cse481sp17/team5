@@ -186,6 +186,14 @@ class ArmServer(object):
                             pose_stamped = PoseStamped()
                             pose_stamped.header.frame_id = "base_link"
                             pose_stamped.pose = self.transform_to_pose(result2)
+                
+                if count == 3:
+                    # pose_stamped.pose.position.z -= 0.005
+                    pose_stamped.pose.position.x += 0.01
+
+                if count - pre_count == 6:
+                    pose_stamped.pose.position.x += 0.015
+
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
                 if error is not None:
                     print 'Error moving to {}.'.format(pose_action.pose)
