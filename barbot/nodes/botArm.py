@@ -102,8 +102,8 @@ class ArmServer(object):
             # goal.pose.position.y += OFFSET_X
             # self._arm.move_to_pose(goal)
 
-            goal.pose.position.z -= OFFSET_Z
-            self._arm.move_to_pose(goal)
+            # goal.pose.position.z -= OFFSET_Z
+            # self._arm.move_to_pose(goal)
 
             ## find the dispenser and set the glass correctly on it
             self.load_fiducial_marker_actions()
