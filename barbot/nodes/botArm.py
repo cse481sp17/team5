@@ -17,11 +17,13 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 import tf.transformations as tft
 
-PICKLE_FILE_PUT_DISPENSER='put_dispenser.p'
-PICKLE_FILE_DISPENSE='dispenser.p'
-PICKLE_FILE_GET_GLASS='get_glass.p'
+# PICKLE_FILE_PUT_DISPENSER='put_dispenser.p'
+# PICKLE_FILE_DISPENSE='dispenser.p'
+# PICKLE_FILE_GET_GLASS='get_glass.p'
 
-pickle_files = [PICKLE_FILE_PUT_DISPENSER, PICKLE_FILE_DISPENSE, PICKLE_FILE_GET_GLASS]
+
+# pickle_files = [PICKLE_FILE_PUT_DISPENSER, PICKLE_FILE_DISPENSE, PICKLE_FILE_GET_GLASS]
+PICKLE_FILE = 'ar_tags.p'
 
 
 OFFSET_X = 0.10
@@ -49,15 +51,12 @@ class ArmServer(object):
         self._torso.set_height(0.4)
         self._head = fetch_api.Head()
         self._head.pan_tilt(0, 0.0)
-        self.actions = {}
-        for fileName in pickle_files:
-            pose_actions = None
-            try:
-                pose_actions = pickle.load(open(fileName, "rb"))
-                print '{} loaded.'.format(fileName)
-            except:
-                print '{} could not be loaded.'.format(fileName)
-            self.actions[fileName] = pose_actions
+        self.actions = None
+        try:
+            self.actions = pickle.load(open(PICKLE_FILE, "rb"))
+            print '{} loaded.'.format(PICKLE_FILE)
+        except:
+            print '{} could not be loaded.'.format(PICKLE_FILE)
 
         self._reader = ArTagReader()
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
@@ -107,11 +106,7 @@ class ArmServer(object):
             self._arm.move_to_pose(goal)
 
             ## find the dispenser and set the glass correctly on it
-            self.load_fiducial_marker_actions(PICKLE_FILE_PUT_DISPENSER)
-            # dispense drink into the glass for a while
-            self.load_fiducial_marker_actions(PICKLE_FILE_DISPENSE)
-            # catch the glass again
-            self.load_fiducial_marker_actions(PICKLE_FILE_GET_GLASS)
+            self.load_fiducial_marker_actions()
 
             # self.set_prepose()
             #self.set_arm_to_the_right()
@@ -158,11 +153,12 @@ class ArmServer(object):
         return base_link_mat
 
 
-    def load_fiducial_marker_actions(self, fileName, amount=3.0):
-        pose_actions = copy.deepcopy(self.actions[fileName])
+    def load_fiducial_marker_actions(self, amount=3.0):
+        pose_actions = copy.deepcopy(self.actions)
 
+        pre_count = 0
         count = 0
-
+        closed = False
         # Run through each of the actions
         for pose_action in pose_actions:
             count += 1
@@ -170,6 +166,9 @@ class ArmServer(object):
                 self._grip.open()
             elif pose_action.actionType == PoseExecutable.CLOSE:
                 self._grip.close(50)
+                if pre_count == 0:
+                    closed = True
+                    pre_count = count
             elif pose_action.actionType == PoseExecutable.MOVETO:
                 pose_stamped = PoseStamped()
                 pose_stamped.header.frame_id = "base_link"
@@ -187,18 +186,12 @@ class ArmServer(object):
                             pose_stamped = PoseStamped()
                             pose_stamped.header.frame_id = "base_link"
                             pose_stamped.pose = self.transform_to_pose(result2)
-                            if fileName == PICKLE_FILE_PUT_DISPENSER or fileName == PICKLE_FILE_GET_GLASS:
-                                pose_stamped.pose.position.z += 0.01
-                                pose_stamped.pose.position.x -= 0.02
-                                if fileName == PICKLE_FILE_PUT_DISPENSER:
-                                    pose_stamped.pose.position.y -= 0.01
-                            else:
-                                pose_stamped.pose.position.x -= 0.01
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
                 if error is not None:
                     print 'Error moving to {}.'.format(pose_action.pose)
                     
-                if fileName is PICKLE_FILE_DISPENSE and count == 3:
+                if closed and count - pre_count == 2:
                     rospy.sleep(amount)
+                    closed = False
             else:
                 print 'invalid command {}'.format(pose_action.action)
