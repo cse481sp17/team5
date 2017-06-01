@@ -32,6 +32,6 @@
   </include>
 
   <!-- tilt the head -->
-  <!--<node pkg="fetch_navigation" type="tilt_head.py" name="tilt_head_node" />-->
+  <node pkg="fetch_navigation" type="tilt_head.py" name="tilt_head_node" />
 
 </launch>
