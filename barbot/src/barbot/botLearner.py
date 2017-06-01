@@ -10,13 +10,11 @@ import copy
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker
-from barbot.msg import PoseNames
-from barbot.msg import UserAction
 import geometry_msgs.msg
 import sys
 from command_bot import *
 
-PICKLE_FILE='pose_list_n.p'
+PICKLE_FILE='pose_list.p'
 PICKLE_FILE_DISPENSER='dispenser.p'
 BAR_TABLE='bar_table'
 HOME='home'
@@ -142,7 +140,7 @@ def main():
     nav_server.loadMarkers()
     for name in nav_server.pose_names_list:
         marker = PoseMarker(pose_marker_server, name, nav_server.pose_names_list[name])
-
+    print nav_server.pose_names_list
     argv = rospy.myargv()
     while True:
         lines = sys.stdin.readline()

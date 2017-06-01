@@ -47,8 +47,7 @@ def handle_user_actions(message):
         orders.remove([message.id, message.ammount])
     print orders
     handle_make_drink()
-    thread = Thread(target = handle_make_drink)
-    thread.start()
+    
 
 def handle_make_drink():
     global WORKING
