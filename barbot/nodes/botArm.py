@@ -17,12 +17,6 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 import tf.transformations as tft
 
-# PICKLE_FILE_PUT_DISPENSER='put_dispenser.p'
-# PICKLE_FILE_DISPENSE='dispenser.p'
-# PICKLE_FILE_GET_GLASS='get_glass.p'
-
-
-# pickle_files = [PICKLE_FILE_PUT_DISPENSER, PICKLE_FILE_DISPENSE, PICKLE_FILE_GET_GLASS]
 PICKLE_FILE = 'ar_tags.p'
 
 
@@ -32,7 +26,7 @@ GRIPPER_OFFSET = 0.171
 DISPENSE_TIME = 3.0
 pre_pose_list = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
 move_arm_to_the_right = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
-# test [-1.3705930364835375, 1.280469534625107, 3.138322253626793, 1.102770685640171, -1.2980107896440538, 0.5342823853513483, -1.8845609229070917]
+
 
 
 class ArTagReader(object):
@@ -73,7 +67,7 @@ class ArmServer(object):
     def lookdown(self):
         self._head.pan_tilt(0, 0.65)
 
-    def findGlass(self, request):
+    def findGlass(self, request, amount=3):
         current_pose = Pose(orientation=Quaternion(0,0,0,1))
         current_pose.position.x = request.x - GRIPPER_OFFSET
         current_pose.position.y = request.y
@@ -99,17 +93,9 @@ class ArmServer(object):
             goal.pose.position.x -= OFFSET_X * 2
             self._arm.move_to_pose(goal)
 
-            # goal.pose.position.y += OFFSET_X
-            # self._arm.move_to_pose(goal)
-
-            # goal.pose.position.z -= OFFSET_Z
-            # self._arm.move_to_pose(goal)
-
             ## find the dispenser and set the glass correctly on it
-            self.load_fiducial_marker_actions()
+            self.load_fiducial_marker_actions(amount)
 
-            # self.set_prepose()
-            #self.set_arm_to_the_right()
         else:
             #self.set_prepose()
             self._head.pan_tilt(0, 0.65)
@@ -153,7 +139,7 @@ class ArmServer(object):
         return base_link_mat
 
 
-    def load_fiducial_marker_actions(self, amount=3.0):
+    def load_fiducial_marker_actions(self, amount):
         pose_actions = copy.deepcopy(self.actions)
 
         pre_count = 0

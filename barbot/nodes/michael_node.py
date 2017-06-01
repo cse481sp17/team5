@@ -40,21 +40,22 @@ def handle_user_actions(message):
     print message.id
     if message.command == DrinkOrder.MAKE_ORDER and not orders.__contains__(message.id):
         print 'appended'
-        orders.append(message.id)
+        orders.append([message.id, message.ammount])
         publish_drink_status('hi')
     if message.command == DrinkOrder.CANCEL_ORDER:
         print ' order cancelled '
-        orders.remove(message.id)
+        orders.remove([message.id, message.ammount])
     print orders
     handle_make_drink()
-    # thread = Thread(target = handle_make_drink)
-    # thread.start()
+    thread = Thread(target = handle_make_drink)
+    thread.start()
 
 def handle_make_drink():
     global WORKING
     global orders
     if  WORKING is None:
-        WORKING = orders[0]
+        WORKING = orders[0][0]
+        amount = int(orders[0][1]) / 3.0
 
         # dont let the arm block the vison
         # arm_server.set_arm_to_the_right()
@@ -75,9 +76,8 @@ def handle_make_drink():
             response = perception_service('cup')
             print 'I got the response and now try to find a glass'
             rospy.loginfo('x = %f, y = %f, z = %f, item = %s', response.x, response.y, response.z, response.item)
-            arm_server.findGlass(response)
+            arm_server.findGlass(response, amount)
 
-            #arm_server.findGlass(1)
         except rospy.ServiceException, e:
             print 'Service call failed getting cup'
             arm_server.lookup()
@@ -165,10 +165,7 @@ def main():
     print 'Waiting for arm to start.'
     controller_client.wait_for_result()
 
-    # arm_server.set_arm_to_the_right()
     arm_server.lookup()
-    # nav_server.goToMarker('init_pose')
-    # nav_server.goToMarker('init_pose1')
 
     print 'going home'
     nav_server.goToMarker(HOME)
