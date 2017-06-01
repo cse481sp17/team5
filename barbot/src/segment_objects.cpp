@@ -32,8 +32,8 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 typedef barbot::MoveToPerception MpServ;
 
 namespace barbot {
-    SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub)
-        : marker_pub_(marker_pub) {}
+    SegmentObjects::SegmentObjects(const ros::Publisher& marker_pub, const std::string cloud_in)
+        : marker_pub_(marker_pub), cloud_in_(cloud_in) {}
 
     // double SegmentObjects::calc_minkowski_distance(geometry_msgs::Point start, geometry_msgs::Point end) {
     //     double aggreg = 0.0;
@@ -59,12 +59,13 @@ namespace barbot {
 
     bool SegmentObjects::ServiceCallback(MpServ::Request  &req, MpServ::Response &res) {
         ROS_INFO("Service call received of type %s", req.perception.c_str());
+        sensor_msgs::PointCloud2ConstPtr camera_pointCloud = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(cloud_in_);
         tf::TransformListener tf_listener;
-        tf_listener.waitForTransform("base_link", camera_pointCloud_.header.frame_id,                     
+        tf_listener.waitForTransform("base_link", camera_pointCloud->header.frame_id,                     
                                 ros::Time(0), ros::Duration(5.0));                       
         tf::StampedTransform transform;                                                       
         try {                                                                                 
-            tf_listener.lookupTransform("base_link", camera_pointCloud_.header.frame_id, ros::Time(0), transform);                               
+            tf_listener.lookupTransform("base_link", camera_pointCloud->header.frame_id, ros::Time(0), transform);                               
         } catch (tf::LookupException& e) {                                                    
             std::cerr << e.what() << std::endl;                                                 
             return 1;                                                                           
@@ -73,7 +74,7 @@ namespace barbot {
             return 1;                                                                           
         }
         sensor_msgs::PointCloud2 cloud_out;                                                   
-        pcl_ros::transformPointCloud("base_link", transform, camera_pointCloud_, cloud_out);
+        pcl_ros::transformPointCloud("base_link", transform, *camera_pointCloud, cloud_out);
         PointCloudC::Ptr base_link_cloud(new PointCloudC());
         pcl::fromROSMsg(cloud_out, *base_link_cloud);
         PointCloudC::Ptr cropped_cloud(new PointCloudC());
@@ -142,10 +143,9 @@ namespace barbot {
                     object_marker.type = visualization_msgs::Marker::CUBE;
                     object_marker.pose = object.pose;
                     object_marker.scale = object.dimensions;
-                    object_marker.color.b = 0.5;
-                    object_marker.color.r = 0.3 + (i * 0.1);                    
-                    object_marker.color.g = 0.1 + (i * 0.1);                    
-                    object_marker.color.a = 0.3 + (i * 0.1);
+                    object_marker.color.b = 0.3;
+                    object_marker.color.g = 0.8;
+                    object_marker.color.a = 0.8;
                     marker_pub_.publish(object_marker);
                     finalPosition.x = object_marker.pose.position.x;
                     finalPosition.y = object_marker.pose.position.y;
@@ -163,7 +163,7 @@ namespace barbot {
         ROS_INFO("sending back response: %s", res.item.c_str());
         return true;
     }
-    void SegmentObjects::HeadCamCallback(const sensor_msgs::PointCloud2& msg) {
-        camera_pointCloud_ = msg;
-    }
+    // void SegmentObjects::HeadCamCallback(const sensor_msgs::PointCloud2& msg) {
+    //     camera_pointCloud_ = msg;
+    // }
 }  // namespace barbot
