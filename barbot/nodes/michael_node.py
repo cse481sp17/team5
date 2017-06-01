@@ -69,6 +69,7 @@ def handle_make_drink():
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
         arm_server.lookdown()
+        rospy.sleep(1)
         arm_server.set_prepose()
         rospy.wait_for_service('move_to_perception')
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
@@ -93,6 +94,7 @@ def handle_make_drink():
         arm_server.lookup()
         nav_server.goToMarker(HOME)
         arm_server.lookdown()
+        rospy.sleep(1)
         error = True
         count = 0
         while count < 3:
@@ -123,12 +125,15 @@ def handle_make_drink():
 
 def publish_drink_status(command, drink_id=None):
     global orders
+    send_orders = []
+    for order in orders:
+        send_orders.append(order[0])
     if drink_id == None:
         drink_id = 'safejkl'
 
     drink_status_pub = rospy.Publisher('/drink_status', DrinkStatus, queue_size=10, latch=True)
     message = DrinkStatus()
-    message.orders = orders
+    message.orders = send_orders
     message.completed = drink_id
     drink_status_pub.publish(message)
 

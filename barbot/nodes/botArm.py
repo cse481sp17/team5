@@ -87,9 +87,10 @@ class ArmServer(object):
             goal.pose.position.x += OFFSET_X
             self._arm.move_to_pose(goal)
             self._grip.close(45)
+            rospy.sleep(1)
             goal.pose.position.z += OFFSET_Z * 1.5
             self._arm.move_to_pose(goal)
-
+            rospy.sleep(1)
             goal.pose.position.x -= OFFSET_X * 2
             self._arm.move_to_pose(goal)
 
@@ -174,18 +175,24 @@ class ArmServer(object):
                             pose_stamped.pose = self.transform_to_pose(result2)
                 
                 if count == 3:
-                    # pose_stamped.pose.position.z -= 0.005
-                    pose_stamped.pose.position.x += 0.01
+                    pose_stamped.pose.position.z -= 0.005
+                    pose_stamped.pose.position.x += 0.015
+                    pose_stamped.pose.position.y -= 0.015
 
                 if count - pre_count == 6:
                     pose_stamped.pose.position.x += 0.015
 
-                error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=40, num_planning_attempts=20)
-                if error is not None:
-                    print 'Error moving to {}.'.format(pose_action.pose)
+                check_count = 0
+                error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=25, num_planning_attempts=15)
+                while error is not None and check_count < 3:
+                    check_count += 1
+                    error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=25, num_planning_attempts=15)
                     
                 if closed and count - pre_count == 2:
                     rospy.sleep(amount)
                     closed = False
+
+                if count == 4:
+                    rospy.sleep(1)
             else:
                 print 'invalid command {}'.format(pose_action.action)
