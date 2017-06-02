@@ -65,11 +65,12 @@ def handle_make_drink():
 
         print 'moving to bar table'
         arm_server.lookup()
+        nav_server.goToMarker('middle')
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
         arm_server.lookdown()
-        rospy.sleep(1)
         arm_server.set_prepose()
+        rospy.sleep(2)
         rospy.wait_for_service('move_to_perception')
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
         try:
@@ -150,6 +151,7 @@ def main():
     wait_for_time()
     nav_server = NavigationServer()
     nav_server.loadMarkers()
+    print nav_server.pose_names_list
 
     gripper = fetch_api.Gripper()
     arm = fetch_api.Arm()
@@ -171,12 +173,16 @@ def main():
 
     arm_server.lookup()
 
+
+    arm_server.set_prepose()
+    # nav_server.goToMarker(BAR_TABLE)
     print 'going home'
+
     nav_server.goToMarker(HOME)
 
     print 'please start to order now'
 
-    # handle user actions
+    # # handle user actions
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
     rospy.spin()
 

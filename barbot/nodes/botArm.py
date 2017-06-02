@@ -106,12 +106,13 @@ class ArmServer(object):
             goal.pose.position.x -= OFFSET_X
             goal.pose.position.z += 2 * OFFSET_Z
             self._arm.move_to_pose(goal)
-            goal.pose.position.z -= (OFFSET_Z + 0.07)
+            goal.pose.position.z -= (OFFSET_Z + 0.04)
             error = self._arm.move_to_pose(goal)
 
             if error is None:
                 self._grip.open()
                 goal.pose.position.x -= OFFSET_X * 2
+                goal.pose.position.z += 0.03
                 self._arm.move_to_pose(goal)
                 return True
             else:

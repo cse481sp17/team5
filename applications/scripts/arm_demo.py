@@ -16,16 +16,10 @@ def main():
     rospy.init_node('arm_demo')
     wait_for_time()
     argv = rospy.myargv()
-    DISCO_POSES = [[1.5, -0.6, 3.0, 1.0, 3.0, 1.0, 3.0],
-                   [0.8, 0.75, 0.0, -2.0, 0.0, 2.0, 0.0],
-                   [-0.8, 0.0, 0.0, 2.0, 0.0, -2.0, 0.0],
-                   [-1.5, 1.1, -3.0, -0.5, -3.0, -1.0, -3.0],
-                   [-0.8, 0.0, 0.0, 2.0, 0.0, -2.0, 0.0],
-                   [0.8, 0.75, 0.0, -2.0, 0.0, 2.0, 0.0],
-                   [1.5, -0.6, 3.0, 1.0, 3.0, 1.0, 3.0]]
+    DISCO_POSES = [[-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]]
 
-    torso = fetch_api.Torso()
-    torso.set_height(fetch_api.Torso.MAX_HEIGHT)
+    #torso = fetch_api.Torso()
+    #torso.set_height(fetch_api.Torso.MAX_HEIGHT)
 
     arm = fetch_api.Arm()
     for vals in DISCO_POSES:

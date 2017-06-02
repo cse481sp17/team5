@@ -74,7 +74,7 @@ class PoseMarker(object):
         if pose_set == None:
             self.pose = geometry_msgs.msg.Pose()
         int_marker = InteractiveMarker()
-        int_marker.header.frame_id = "odom"
+        int_marker.header.frame_id = "map"
         int_marker.name = name
         int_marker.description = name
         int_marker.pose = self.pose
@@ -113,9 +113,11 @@ class PoseMarker(object):
         self._server.applyChanges()
 
     def _callback(self, msg):
+        # print msg
          # Get the interactive marker given msg.marker_name?
          # See the InteractiveMarkerServer documentation
         interactive_marker = self._server.get(msg.marker_name)
+        # print interactive_marker.header
         position = interactive_marker.pose
 
         if msg.event_type == InteractiveMarkerFeedback.POSE_UPDATE:

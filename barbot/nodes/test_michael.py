@@ -26,7 +26,7 @@ def main():
     message.command = DrinkOrder.MAKE_ORDER
     message.id = '1'
     message.type = 'good'
-    message.ammount = '6oz'
+    message.ammount = '6'
     drink_status_pub.publish(message)
 
 if __name__ == '__main__':
