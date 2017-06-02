@@ -23,10 +23,14 @@ def main():
     for k, v in zip(names, arm_vals):
         print '{}\t{}'.format(k, v)
 
-    value = reader.get_joint('r_gripper_finger_joint')
+    armList = ['shoulder_pan_joint','shoulder_lift_joint','upperarm_roll_joint','elbow_flex_joint','forearm_roll_joint','wrist_flex_joint','wrist_roll_joint']
+
+    value = reader.get_joints(armList)
+    # print value
+    # value = reader.get_joint('l_gripper_finger_joint')
     print value
-    value = reader.get_joint('l_gripper_finger_joint')
-    print value
+
+
                       
                       
 if __name__ == '__main__':

@@ -64,19 +64,29 @@ def handle_make_drink():
         # nav_server.goToMarker('home1')
 
         print 'moving to bar table'
-        arm_server.lookup()
-        nav_server.goToMarker('middle')
+        # arm_server.lookup()
+        # nav_server.goToMarker('middle')
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
+        rospy.sleep(1)
         arm_server.lookdown()
         arm_server.set_prepose()
         rospy.sleep(2)
         rospy.wait_for_service('move_to_perception')
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
         try:
+            
             response = perception_service('cup')
             print 'I got the response and now try to find a glass'
             rospy.loginfo('x = %f, y = %f, z = %f, item = %s', response.x, response.y, response.z, response.item)
+
+            if (response.x == 0.0 and response.y == 0.0 and response.z == 0.0) :
+                rospy.sleep(0.5)
+                rospy.wait_for_service('move_to_perception')
+                perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
+                response = perception_service('cup')
+                print 'I got the response and now try to find a glass'
+                rospy.loginfo('x = %f, y = %f, z = %f, item = %s', response.x, response.y, response.z, response.item)
             arm_server.findGlass(response, amount)
 
         except rospy.ServiceException, e:
@@ -93,6 +103,7 @@ def handle_make_drink():
         print 'moving to home'
         arm_server.lookup()
         nav_server.goToMarker(HOME)
+        rospy.sleep(1)
         arm_server.lookdown()
         rospy.sleep(1)
         error = True
@@ -110,6 +121,7 @@ def handle_make_drink():
             orders.pop()
             if len(orders) != 0:
                 handle_make_drink()
+                print 'finished'
             return
         # send back id and "done"
         publish_drink_status('done', WORKING)
@@ -173,7 +185,7 @@ def main():
 
     arm_server.lookup()
 
-
+    arm_server.set_init_poses()
     arm_server.set_prepose()
     # nav_server.goToMarker(BAR_TABLE)
     print 'going home'

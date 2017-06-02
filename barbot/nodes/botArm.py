@@ -27,6 +27,8 @@ DISPENSE_TIME = 3.0
 pre_pose_list = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
 move_arm_to_the_right = [-1.605528329547318, 1.41720603380179, 2.018610841968549, 1.5522558117738399, -1.5635699410855368, 0.7653977094751401, -1.3914909133500242]
 
+init_poses = [[1.3196586039245606, 1.399102116081543, -0.19917789824836732, 1.7195996657226562, 0.0008170249206304533, 1.65912950881958, 0.00012516874608993478],[1.3204253580749512, 1.4006361012194823, -1.4696967674099732, 1.7195996657226562, 0.0004335304987907393, 1.6595128858947754, 0.0005086650305747981],[-0.023341808062744142, 1.1989177708361816, 3.0221818613208007, 1.3702353850219726, 0, 1.5601877058410645, -0.0002583275383949285],[-0.992434177142334, 1.1977671627734374, 3.0210312532580565, 1.3710021391723632, 0.0004335304987907393, 1.5594204748535156, 0.0005086650305747981],[-0.8041378590881347, 1.5402282719348144, -3.0301393342816163, 1.654021681866455, -1.4645179176437377, 0.8871530378723145, -1.3804577822631836]]
+
 
 
 class ArTagReader(object):
@@ -54,6 +56,11 @@ class ArmServer(object):
 
         self._reader = ArTagReader()
         self._sub = rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self._reader.callback)
+
+    def set_init_poses(self):
+        for pose in init_poses:
+            self._arm.move_to_joints(fetch_api.ArmJoints.from_list(pose))
+            rospy.sleep(0.5)
 
     def set_prepose(self):
         self._arm.move_to_joints(fetch_api.ArmJoints.from_list(pre_pose_list))
@@ -153,7 +160,7 @@ class ArmServer(object):
             if pose_action.actionType == PoseExecutable.OPEN:
                 self._grip.open()
             elif pose_action.actionType == PoseExecutable.CLOSE:
-                self._grip.close(50)
+                self._grip.close(60)
                 if pre_count == 0:
                     closed = True
                     pre_count = count
