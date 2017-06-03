@@ -82,6 +82,65 @@ class Arm(object):
         self._client.send_goal(goal)
         # TODO: Wait for result
         self._client.wait_for_result()
+    
+    def move_to_joint_goal(self,
+                           joints,
+                           allowed_planning_time=10.0,
+                           execution_timeout=rospy.Duration(15.0),
+                           group_name='arm',
+                           num_planning_attempts=1,
+                           plan_only=False,
+                           replan=False,
+                           replan_attempts=5,
+                           tolerance=0.01):
+        """Moves the end-effector to a pose, using motion planning.
+        Args:
+            joints: A list of (name, value) for the arm joints.
+            allowed_planning_time: float. The maximum duration to wait for a
+                planning result.
+            execution_timeout: float. The maximum duration to wait for an arm
+                motion to execute (or for planning to fail completely), in
+                seconds.
+            group_name: string. Either 'arm' or 'arm_with_torso'.
+            num_planning_attempts: int. The number of times to compute the same
+                plan. The shortest path is ultimately used. For random
+                planners, this can help get shorter, less weird paths.
+            plan_only: bool. If True, then this method does not execute the
+                plan on the robot. Useful for determining whether this is
+                likely to succeed.
+            replan: bool. If True, then if an execution fails (while the arm is
+                moving), then come up with a new plan and execute it.
+            replan_attempts: int. How many times to replan if the execution
+                fails.
+            tolerance: float. The goal tolerance, in meters.
+        Returns:
+            string describing the error if an error occurred, else None.
+        """
+        goal_builder = MoveItGoalBuilder()
+        goal_builder.set_joint_goal(*zip(*joints))
+        goal_builder.allowed_planning_time = allowed_planning_time
+        goal_builder.num_planning_attempts = num_planning_attempts
+        goal_builder.plan_only = plan_only
+        goal_builder.planner_id = ''
+        goal_builder.replan = replan
+        goal_builder.replan_attempts = replan_attempts
+        goal_builder.tolerance = tolerance
+        goal = goal_builder.build()
+        if goal is not None:
+            self._move_group_client.send_goal(goal)
+            success = self._move_group_client.wait_for_result(
+                rospy.Duration(execution_timeout))
+            if not success:
+                return moveit_error_string(MoveItErrorCodes.TIMED_OUT)
+            result = self._move_group_client.get_result()
+
+        if result:
+            if result.error_code.val == MoveItErrorCodes.SUCCESS:
+                return None
+            else:
+                return moveit_error_string(result.error_code.val)
+        else:
+            return moveit_error_string(MoveItErrorCodes.TIMED_OUT)
 
     def moveit_error_string(self, val):
         """Returns a string associated with a MoveItErrorCode.

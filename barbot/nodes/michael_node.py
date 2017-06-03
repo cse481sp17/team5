@@ -46,6 +46,10 @@ def handle_user_actions(message):
         print ' order cancelled '
         orders.remove([message.id, message.ammount])
     print orders
+
+def query_orders():
+    if len(orders) == 0:
+        return
     handle_make_drink()
     
 
@@ -64,18 +68,17 @@ def handle_make_drink():
         # nav_server.goToMarker('home1')
 
         print 'moving to bar table'
-        # arm_server.lookup()
+        arm_server.lookup()
         # nav_server.goToMarker('middle')
         nav_server.goToMarker(BAR_TABLE)
         # call service to run cpp file
-        rospy.sleep(1)
+        rospy.sleep(0.5)
         arm_server.lookdown()
         arm_server.set_prepose()
         rospy.sleep(2)
         rospy.wait_for_service('move_to_perception')
         perception_service = rospy.ServiceProxy('move_to_perception', MoveToPerception)
         try:
-            
             response = perception_service('cup')
             print 'I got the response and now try to find a glass'
             rospy.loginfo('x = %f, y = %f, z = %f, item = %s', response.x, response.y, response.z, response.item)
@@ -133,7 +136,6 @@ def handle_make_drink():
         # send back "still working"
         publish_drink_status('still working', WORKING)
         print 'still working'
-        pass
 
 def publish_drink_status(command, drink_id=None):
     global orders
@@ -196,7 +198,9 @@ def main():
 
     # # handle user actions
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
-    rospy.spin()
+    while True:
+        query_orders()
+        rospy.sleep(0.1)
 
 if __name__ == '__main__':
     main()
