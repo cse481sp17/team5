@@ -2,6 +2,7 @@
 from threading import Thread
 import fetch_api
 import time
+import signal
 import rospy
 import pickle
 import copy
@@ -14,6 +15,8 @@ from barbot.srv import *
 from barbot.msg import *
 from botNavigation import NavigationServer
 from botArm import ArmServer
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
 from robot_controllers_msgs.msg import QueryControllerStatesGoal, QueryControllerStatesAction, ControllerState
 
 PICKLE_FILE='pose_list.p'
@@ -24,6 +27,7 @@ WORKING=None
 orders=[]
 nav_server = None
 arm_server = None
+sound_handler = SoundClient()
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -38,13 +42,13 @@ def handle_user_actions(message):
     print 'I got a message'
     print message.command
     print message.id
-    if message.command == DrinkOrder.MAKE_ORDER and not orders.__contains__(message.id):
+    if message.command == DrinkOrder.MAKE_ORDER:
         print 'appended'
-        orders.append([message.id, message.ammount])
-        publish_drink_status('hi')
+        orders.append([message.id, message.ammount, message.type])
+        publish_drink_status()
     if message.command == DrinkOrder.CANCEL_ORDER:
         print ' order cancelled '
-        orders.remove([message.id, message.ammount])
+        orders.remove([message.id, message.ammount, message.type])
     print orders
 
 def query_orders():
@@ -57,8 +61,11 @@ def handle_make_drink():
     global WORKING
     global orders
     if  WORKING is None:
-        WORKING = orders[0][0]
-        amount = int(orders[0][1]) / 3.0
+        curr = orders.pop(0)
+        WORKING = curr[0]
+        amount = int(curr[1]) / 3.0
+        orderType = curr[2]
+        sound_handler.say('Pouring you a {}'.format(orderType))
 
         # dont let the arm block the vison
         # arm_server.set_arm_to_the_right()
@@ -68,6 +75,7 @@ def handle_make_drink():
         # nav_server.goToMarker('home1')
 
         print 'moving to bar table'
+        sound_handler.say('Blue solo cup. I fill you up. Let us have a party. A party.')
         arm_server.lookup()
         # nav_server.goToMarker('middle')
         nav_server.goToMarker(BAR_TABLE)
@@ -96,11 +104,8 @@ def handle_make_drink():
             print 'Service call failed getting cup'
             arm_server.lookup()
             nav_server.goToMarker(HOME)
-            publish_drink_status('failed', WORKING)
+            publish_drink_status(WORKING)
             WORKING = None
-            orders.pop()
-            if len(orders) != 0:
-                handle_make_drink()
             return
 
         print 'moving to home'
@@ -119,31 +124,26 @@ def handle_make_drink():
             except rospy.ServiceException, e:
                 count += 1
         if count == 3 or not error:
-            publish_drink_status('failed to drop', WORKING)
+            publish_drink_status(WORKING)
             WORKING = None
-            orders.pop()
-            if len(orders) != 0:
-                handle_make_drink()
-                print 'finished'
             return
         # send back id and "done"
-        publish_drink_status('done', WORKING)
+        publish_drink_status(WORKING)
         WORKING = None
-        orders.pop()
-        if len(orders) != 0:
-            handle_make_drink()
+        print 'Drink completed.'
+        sound_handler.say('Here is your drink. Enjoy!')
     else:
-        # send back "still working"
-        publish_drink_status('still working', WORKING)
+        # send         orders.pop()back "still working"
+        publish_drink_status(WORKING)
         print 'still working'
 
-def publish_drink_status(command, drink_id=None):
+def publish_drink_status(drink_id=None):
     global orders
     send_orders = []
     for order in orders:
         send_orders.append(order[0])
     if drink_id == None:
-        drink_id = 'safejkl'
+        drink_id = 'NAN'
 
     drink_status_pub = rospy.Publisher('/drink_status', DrinkStatus, queue_size=10, latch=True)
     message = DrinkStatus()
@@ -151,6 +151,9 @@ def publish_drink_status(command, drink_id=None):
     message.completed = drink_id
     drink_status_pub.publish(message)
 
+def signal_handler(signal, frame):
+    print('Exiting Safely!')
+    sys.exit(0)
 
 def main():
     global nav_server
@@ -198,6 +201,7 @@ def main():
 
     # # handle user actions
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
+    signal.signal(signal.SIGINT, signal_handler)
     while True:
         query_orders()
         rospy.sleep(0.1)
