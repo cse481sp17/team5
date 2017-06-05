@@ -1,5 +1,5 @@
 <launch>
-    <include file="$(find barbot)/launch/nav_rviz.launch" />
+    <!--<include file="$(find barbot)/launch/nav_rviz.launch" />-->
     <!--<include file="$(find fetch_api)/launch/move_group.launch" />-->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
     <include file="$(find barbot)/launch/fetch_nav.launch">
