@@ -110,6 +110,8 @@
         this._toastSpeed = 5000;
         this._deferredOrder = null;
         this._deferredOrderId = null;
+        this._isCurrentOrder = false;
+        this._interval = 0;
         return this;
     };
     Application.prototype.constructor = Application;
@@ -142,23 +144,23 @@
     Application.prototype.order = function(type, ammount) {
         var self = this;
         Materialize.toast('Ordered Drink: ' + type + ' ' + ammount + 'oz', self._toastSpeed);
-        var interval;
         self._$order.deferredFadeOut()
         .then(() => {
-            self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0m 00s</h4>');
+            self._loader._$text.html('Queueing. <h4 style="text-align: center" id="timer">0m 00s</h4>');
             var time = 0;
             var $timer = $('#timer');
-            interval = window.setInterval(() => {
-		time++;
-		var minutes = Math.floor(time/60);
-		var seconds = time % 60;
-		$timer.text(minutes + "m " + ('0' + seconds).slice(-2) + "s");
-		}, 1000);
+            self._interval = window.setInterval(() => {
+                time++;
+                var minutes = Math.floor(time/60);
+                var seconds = time % 60;
+                $timer.text(minutes + "m " + ('0' + seconds).slice(-2) + "s");
+                }, 1000);
             return self._loader.show();})
         .then(() => self._sendOrder(type, ammount))
         .then(
             () => {
-                window.clearInterval(interval);
+                window.clearInterval(self._interval);
+                self._interval = null;
                 Materialize.toast('Drink Completed.', self._toastSpeed);
                 Materialize.toast('Enjoy!', self._toastSpeed);
                 return self._loader.setText('Drink Complete.')
@@ -205,12 +207,32 @@
                         self._deferredOrder.resolve();
                         self._deferredOrder = null;
                         self._deferredOrderId = null;
-                    } else {
+                        self._isCurrentOrder = false;
+                    } else if(!self._isCurrentOrder) {
+                        var isCurrentOrder = true;
                         for(var i = 0; i < message.orders.length; i++) {
                             if(message.orders[i] == self._deferredOrderId) {
                                  Materialize.toast('Currently in queue: ' + (i + 1) + ' of ' + message.orders.length, self._toastSpeed);
+                                 isCurrentOrder = false;
                                  break;
                             }
+                        }
+                        if(isCurrentOrder) {
+                            self._loader._$text.deferredFadeOut()
+                            .then(() => {
+                                self._loader._$text.html('Creating Drink. <h4 style="text-align: center" id="timer">0m 00s</h4>');
+                                var time = 0;
+                                var $timer = $('#timer');
+                                window.clearInterval(self._interval);  
+                                self._interval = window.setInterval(() => {
+                                    time++;
+                                    var minutes = Math.floor(time/60);
+                                    var seconds = time % 60;
+                                    $timer.text(minutes + "m " + ('0' + seconds).slice(-2) + "s");
+                                }, 1000);
+                                self._loader._$text.deferredFadeIn();
+                            });
+                            self._isCurrentOrder = true;
                         }
                     }
                 });
@@ -249,6 +271,7 @@
         self._deferredOrder = p;
         self._deferredOrderId = guid;
         self._drinkPublisher.publish(message);
+        self._isCurrentOrder = false;
 
         console.info("Drink order published: " + guid);
 

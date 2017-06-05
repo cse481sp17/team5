@@ -27,7 +27,7 @@ WORKING=None
 orders=[]
 nav_server = None
 arm_server = None
-sound_handler = SoundClient()
+sound_handler = None
 
 def wait_for_time():
     """Wait for simulated time to begin.
@@ -67,15 +67,7 @@ def handle_make_drink():
         orderType = curr[2]
         sound_handler.say('Pouring you a {}'.format(orderType))
 
-        # dont let the arm block the vison
-        # arm_server.set_arm_to_the_right()
-
-        # # navigate to the bar table
-        # print 'moving to home1'
-        # nav_server.goToMarker('home1')
-
         print 'moving to bar table'
-        sound_handler.say('Blue solo cup. I fill you up. Let us have a party. A party.')
         arm_server.lookup()
         # nav_server.goToMarker('middle')
         nav_server.goToMarker(BAR_TABLE)
@@ -160,6 +152,8 @@ def main():
     global WORKING
     global arm_server
     global orders
+    global sound_handler
+    sound_handler = SoundClient()
     orders = []
     WORKING = None
 
@@ -168,12 +162,11 @@ def main():
     wait_for_time()
     nav_server = NavigationServer()
     nav_server.loadMarkers()
-    print nav_server.pose_names_list
 
     gripper = fetch_api.Gripper()
     arm = fetch_api.Arm()
     arm_server = ArmServer()
-    print 'Arm servre instantiated.'
+    print 'Arm server instantiated.'
 
     # MOVE TO MICHAEL_NODE
     controller_client = actionlib.SimpleActionClient('/query_controller_states', QueryControllerStatesAction)
@@ -198,6 +191,7 @@ def main():
     nav_server.goToMarker(HOME)
 
     print 'please start to order now'
+    sound_handler.say('You may now order.')
 
     # # handle user actions
     drink_order_sub = rospy.Subscriber('/drink_order', DrinkOrder, handle_user_actions)
