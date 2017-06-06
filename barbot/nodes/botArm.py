@@ -84,7 +84,6 @@ class ArmServer(object):
         self._head.pan_tilt(0, 0.65)
 
         if (request.item == 'cup'):
-            self._head.pan_tilt(0, 0.65)
             self._grip.open()
             goal = PoseStamped()
             goal.header.frame_id = 'base_link'
@@ -106,7 +105,6 @@ class ArmServer(object):
 
         else:
             #self.set_prepose()
-            self._head.pan_tilt(0, 0.65)
             goal = PoseStamped()
             goal.header.frame_id = 'base_link'
             goal.pose = copy.deepcopy(current_pose)
