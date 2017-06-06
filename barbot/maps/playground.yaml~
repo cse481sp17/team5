@@ -1,4 +1,4 @@
-image: /home/team5/catkin_ws/src/cse481c/barbot/maps/playground1.pgm
+image: /home/team5/catkin_ws/src/cse481c/barbot/maps/playground.pgm
 resolution: 0.050000
 origin: [-8.439900, -8.345497, 0.000000]
 negate: 0
