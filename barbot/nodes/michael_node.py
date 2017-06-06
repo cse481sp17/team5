@@ -121,9 +121,9 @@ def handle_make_drink():
             return
         # send back id and "done"
         publish_drink_status(WORKING)
-        WORKING = None
         print 'Drink completed.'
         sound_handler.say('Here is your drink. Enjoy!')
+        WORKING = None        
     else:
         # send         orders.pop()back "still working"
         publish_drink_status(WORKING)

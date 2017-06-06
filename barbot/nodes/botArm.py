@@ -190,10 +190,21 @@ class ArmServer(object):
                 if count - pre_count == 6:
                     pose_stamped.pose.position.x += 0.015
 
+                if count == len(self.actions) - 2:
+                    pose_stamped.pose.position.x += 0.015
+
+                if count == len(self.actions):
+                    pose_stamped.pose.position.z += 0.015
+
                 check_count = 0
                 error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=25, num_planning_attempts=15)
                 while error is not None and check_count < 3:
                     check_count += 1
+                    error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=25, num_planning_attempts=15)
+
+                # move upper after getting the cup back
+                if count == len(self.actions):
+                    pose_stamped.pose.position.z += 0.05
                     error = self._arm.move_to_pose(pose_stamped, allowed_planning_time=25, num_planning_attempts=15)
                     
                 if closed and count - pre_count == 2:
